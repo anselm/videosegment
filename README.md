@@ -81,6 +81,11 @@ A React + Express application for managing YouTube video transcriptions and segm
 - AI-powered transcript segmentation using Claude
 - Server-side filesystem storage (JSON files)
 - Processing status tracking
+- Smart segmentation based on signal phrases:
+  - **Step detection**: "Next step", "New Step", "Moving on", etc.
+  - **Key points**: "Key Point", "This is important", "Remember", etc.
+  - **Warnings**: "Watch out", "Be careful", "Warning", "Dangerous"
+- Visual highlighting of warnings (red) and key points (yellow)
 
 ## Data Storage
 

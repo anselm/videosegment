@@ -135,9 +135,19 @@ const VideoDetail = () => {
         
         <div>
           <h2 className="text-xl font-semibold mb-4">Transcript</h2>
-          <div className="border border-white p-4 min-h-[400px]">
+          <div className="border border-white p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
             {video.transcript ? (
-              <p className="whitespace-pre-wrap">{video.transcript}</p>
+              <div>
+                <p className="whitespace-pre-wrap">{video.transcript}</p>
+                {video.segments && video.segments.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <p className="text-sm text-gray-400 mb-2">
+                      Detected {video.segments.length} segments, 
+                      {video.segments.filter(s => s.type === 'step').length} steps
+                    </p>
+                  </div>
+                )}
+              </div>
             ) : (
               <p className="text-gray-500">Transcript will appear here after processing</p>
             )}
@@ -149,13 +159,57 @@ const VideoDetail = () => {
         <h2 className="text-xl font-semibold mb-4">Segments</h2>
         <div className="border border-white p-4">
           {video.segments && video.segments.length > 0 ? (
-            <div className="space-y-2">
-              {video.segments.map((segment) => (
-                <div key={segment.id} className="p-2 border border-gray-700">
-                  <div className="flex justify-between text-sm text-gray-400 mb-1">
-                    <span>{formatTime(segment.startTime)} - {formatTime(segment.endTime)}</span>
+            <div className="space-y-4">
+              {video.segments.map((segment, index) => (
+                <div key={segment.id} className="p-4 border border-gray-700">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold text-lg">
+                        {segment.type === 'step' && `Step ${index + 1}: `}
+                        {segment.title || `Segment ${index + 1}`}
+                      </h3>
+                      <span className="text-sm text-gray-400">
+                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                      </span>
+                    </div>
+                    {segment.type === 'step' && (
+                      <span className="px-2 py-1 bg-blue-900 text-blue-200 text-xs rounded">
+                        STEP
+                      </span>
+                    )}
                   </div>
-                  <p>{segment.text}</p>
+                  
+                  <div className="mt-3 space-y-2">
+                    {segment.warnings && segment.warnings.length > 0 && (
+                      <div className="space-y-1">
+                        {segment.warnings.map((warning, idx) => (
+                          <div key={idx} className="p-2 bg-red-900 border border-red-700 rounded">
+                            <span className="font-bold text-red-200">⚠️ WARNING: </span>
+                            <span className="text-red-100">{warning.text}</span>
+                            <span className="text-xs text-red-300 ml-2">
+                              ({formatTime(warning.timestamp)})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {segment.keyPoints && segment.keyPoints.length > 0 && (
+                      <div className="space-y-1">
+                        {segment.keyPoints.map((point, idx) => (
+                          <div key={idx} className="p-2 bg-yellow-900 border border-yellow-700 rounded">
+                            <span className="font-bold text-yellow-200">💡 KEY POINT: </span>
+                            <span className="text-yellow-100">{point.text}</span>
+                            <span className="text-xs text-yellow-300 ml-2">
+                              ({formatTime(point.timestamp)})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <p className="whitespace-pre-wrap">{segment.text}</p>
+                  </div>
                 </div>
               ))}
             </div>

@@ -16,4 +16,14 @@ export interface VideoSegment {
   startTime: number
   endTime: number
   text: string
+  title?: string
+  type?: 'step' | 'general'
+  keyPoints?: Array<{
+    text: string
+    timestamp: number
+  }>
+  warnings?: Array<{
+    text: string
+    timestamp: number
+  }>
 }

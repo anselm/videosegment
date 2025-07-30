@@ -43,13 +43,44 @@ export async function segmentTranscript(transcript, videoUrl) {
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
-    const prompt = `You are a video content analyzer. I will provide you with a transcript from a YouTube video. Your task is to segment this transcript into logical sections or chapters.
+    const prompt = `You are a video content analyzer. I will provide you with a transcript from a YouTube video. Your task is to segment this transcript based on specific signal phrases and create structured content.
+
+IMPORTANT SIGNAL PHRASES TO DETECT:
+
+1. STEP/SEGMENT TRIGGERS (these phrases indicate a new segment/step):
+   - "Next step"
+   - "New Step"
+   - "Step complete"
+   - "Now we will"
+   - "Break here"
+   - "Let's move on"
+   - "Moving on"
+   - "End Step"
+
+2. KEY POINT/REASON TRIGGERS (mark these as important highlights):
+   - "Key Point"
+   - "Key Reason"
+   - "This is important"
+   - "An important point"
+   - "Remember"
+   - "Something to remember"
+   - "You want to do this because"
+   - "The reason we do this is"
+
+3. WARNING TRIGGERS (these need special emphasis):
+   - "Watch out"
+   - "Be careful"
+   - "Warning"
+   - "Dangerous"
 
 For each segment, provide:
-1. A title that summarizes the main topic
+1. A title that summarizes the main topic or step
 2. The start time (in seconds)
 3. The end time (in seconds)
-4. A brief summary of what's discussed
+4. The full text content of the segment
+5. Any key points found within the segment
+6. Any warnings found within the segment
+7. The type of segment (step, general, or auto-detected)
 
 The video URL is: ${videoUrl}
 
@@ -64,12 +95,30 @@ Please return the segments in the following JSON format:
       "title": "Segment Title",
       "startTime": 0,
       "endTime": 120,
-      "text": "Brief summary of this segment"
+      "text": "Full text content of this segment",
+      "type": "step" | "general",
+      "keyPoints": [
+        {
+          "text": "Important point text",
+          "timestamp": 45
+        }
+      ],
+      "warnings": [
+        {
+          "text": "Warning text",
+          "timestamp": 60
+        }
+      ]
     }
   ]
 }
 
-Focus on creating meaningful segments that represent distinct topics or sections in the video.`;
+IMPORTANT: 
+- Look for the signal phrases (case-insensitive) to determine segment boundaries
+- When you find a step trigger phrase, create a new segment starting from that point
+- Extract key points and warnings based on the trigger phrases
+- If no explicit signal phrases are found, create logical segments based on topic changes
+- Include the actual spoken text in the segments, not just summaries`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
