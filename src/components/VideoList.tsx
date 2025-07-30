@@ -4,12 +4,12 @@ import { useVideoStore } from '../hooks/useVideoStore'
 
 const VideoList = () => {
   const [inputUrl, setInputUrl] = useState('')
-  const { videos, addVideo } = useVideoStore()
+  const { videos, addVideo, loading, error } = useVideoStore()
 
-  const handleAddVideo = (e: React.FormEvent) => {
+  const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (inputUrl.trim()) {
-      addVideo(inputUrl.trim())
+      await addVideo(inputUrl.trim())
       setInputUrl('')
     }
   }
@@ -34,12 +34,19 @@ const VideoList = () => {
           />
           <button
             type="submit"
-            className="px-6 py-2 bg-white text-black hover:bg-gray-200 transition-colors"
+            disabled={loading}
+            className="px-6 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Video
+            {loading ? 'Adding...' : 'Add Video'}
           </button>
         </div>
       </form>
+
+      {error && (
+        <div className="mb-4 p-4 border border-red-500 text-red-500">
+          {error}
+        </div>
+      )}
 
       <div className="space-y-4">
         {videos.length === 0 ? (

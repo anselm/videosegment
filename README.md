@@ -1,0 +1,85 @@
+# Video Transcription App
+
+A React + Express application for managing YouTube video transcriptions and segmentation.
+
+## Architecture
+
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Express.js server
+- **Development**: Concurrent frontend and backend servers with proxy configuration
+- **Production**: Express serves the built React app as static files
+
+## Getting Started
+
+### Development
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Run both frontend and backend in development mode:
+   ```bash
+   npm run dev
+   ```
+
+   This will start:
+   - Frontend dev server on http://localhost:5173
+   - Backend API server on http://localhost:3001
+
+### Production Build
+
+1. Build the frontend:
+   ```bash
+   npm run build
+   ```
+
+2. Start the production server:
+   ```bash
+   npm run server
+   ```
+
+   Or use the combined command:
+   ```bash
+   npm run build:prod
+   ```
+
+## Project Structure
+
+```
+├── server/              # Express backend
+│   └── index.js        # Server entry point
+├── src/                # React frontend
+│   ├── components/     # React components
+│   ├── hooks/          # Custom React hooks
+│   ├── services/       # API service layer
+│   └── types/          # TypeScript types
+├── dist/               # Built frontend (generated)
+└── package.json        # Project dependencies
+```
+
+## API Endpoints
+
+- `GET /api/health` - Health check
+- `GET /api/videos` - Get all videos
+- `POST /api/videos` - Add a new video
+- `GET /api/videos/:id` - Get video details
+- `PUT /api/videos/:id` - Update video (future)
+
+## Features
+
+- Add YouTube videos by URL
+- View video list with thumbnails
+- Video detail page with embedded player
+- Placeholder for transcription display
+- Placeholder for segmentation display
+- Local storage persistence (temporary)
+
+## Future Enhancements
+
+- Server-side video processing
+- YouTube API integration
+- Transcription service integration
+- Video segmentation algorithm
+- Database persistence
+- Authentication
