@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Video } from '../types/Video'
 import { api } from '../services/api'
 
@@ -42,13 +42,15 @@ export const useVideoStore = () => {
     }
   }
 
-  const getVideo = (id: string) => {
+  const getVideo = useCallback((id: string) => {
     return videos.find(v => v.id === id)
-  }
+  }, [videos])
 
-  const fetchVideo = async (id: string) => {
+  const fetchVideo = useCallback(async (id: string) => {
+    console.log('[useVideoStore] fetchVideo called for id:', id)
     try {
       const video = await api.getVideo(id)
+      console.log('[useVideoStore] Video fetched from API:', video.title)
       // Update local state with fetched video
       setVideos(prevVideos => {
         const index = prevVideos.findIndex(v => v.id === id)
@@ -61,10 +63,11 @@ export const useVideoStore = () => {
       })
       return video
     } catch (err) {
+      console.error('[useVideoStore] Error fetching video:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch video')
       throw err
     }
-  }
+  }, [])
 
   const updateVideo = async (id: string, updates: Partial<Video>) => {
     try {

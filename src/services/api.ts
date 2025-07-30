@@ -27,9 +27,12 @@ export const api = {
   },
 
   async getVideo(id: string) {
+    console.log('[API] Fetching video:', id);
     const response = await fetch(`/api/videos/${id}`);
     if (!response.ok) throw new Error('Failed to fetch video');
-    return response.json();
+    const data = await response.json();
+    console.log('[API] Video data received, transcript length:', data.transcript?.length || 0);
+    return data;
   },
 
   async updateVideo(id: string, updates: any) {

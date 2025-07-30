@@ -179,15 +179,19 @@ app.post('/api/videos', async (req, res) => {
 app.get('/api/videos/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Server] GET /api/videos/${id} - Fetching video data`);
+    
     const video = await readVideoData(id);
     
     if (!video) {
+      console.log(`[Server] Video not found: ${id}`);
       return res.status(404).json({ error: 'Video not found' });
     }
     
+    console.log(`[Server] Sending video data for ${id}, transcript size: ${video.transcript?.length || 0} chars`);
     res.json(video);
   } catch (error) {
-    console.error('Error fetching video:', error);
+    console.error('[Server] Error fetching video:', error);
     res.status(500).json({ error: 'Failed to fetch video' });
   }
 });

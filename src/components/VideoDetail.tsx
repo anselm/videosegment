@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useVideoStore } from '../hooks/useVideoStore'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Video } from '../types/Video'
 import { api } from '../services/api'
 
@@ -15,26 +15,31 @@ const VideoDetail = () => {
     const loadVideo = async () => {
       if (!id) return
       
+      console.log('[VideoDetail] Starting to load video:', id)
       setLoading(true)
       try {
         // Try to get from local state first
         const localVideo = getVideo(id)
         if (localVideo) {
+          console.log('[VideoDetail] Found video in local state:', localVideo.title)
           setVideo(localVideo)
         }
         
         // Fetch fresh data from server
+        console.log('[VideoDetail] Fetching fresh data from server...')
         const freshVideo = await fetchVideo(id)
+        console.log('[VideoDetail] Received fresh video data:', freshVideo.title)
         setVideo(freshVideo)
       } catch (error) {
-        console.error('Error loading video:', error)
+        console.error('[VideoDetail] Error loading video:', error)
       } finally {
+        console.log('[VideoDetail] Loading complete')
         setLoading(false)
       }
     }
     
     loadVideo()
-  }, [id, getVideo, fetchVideo])
+  }, [id]) // Remove getVideo and fetchVideo from dependencies to prevent loops
 
   if (loading) {
     return (
@@ -138,7 +143,15 @@ const VideoDetail = () => {
           <div className="border border-white p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
             {video.transcript ? (
               <div>
-                <p className="whitespace-pre-wrap">{video.transcript}</p>
+                {video.transcript.length > 50000 ? (
+                  <div>
+                    <p className="text-yellow-500 mb-2">Large transcript ({video.transcript.length} characters)</p>
+                    <p className="whitespace-pre-wrap">{video.transcript.substring(0, 10000)}...</p>
+                    <p className="text-gray-500 mt-4">Transcript truncated for performance. Full transcript available in segments below.</p>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap">{video.transcript}</p>
+                )}
                 {video.segments && video.segments.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">
