@@ -78,7 +78,11 @@ A React + Express application for managing YouTube video transcriptions and segm
 - Video detail page with embedded player
 - Placeholder for transcription display
 - Placeholder for segmentation display
-- Local storage persistence (temporary)
+- Server-side filesystem storage (JSON files)
+
+## Data Storage
+
+Videos are stored as JSON files in the `data/videos/` directory on the server. Each video is saved as a separate file with its unique ID as the filename.
 
 ## Future Enhancements
 
@@ -86,5 +90,5 @@ A React + Express application for managing YouTube video transcriptions and segm
 - YouTube API integration
 - Transcription service integration
 - Video segmentation algorithm
-- Database persistence
+- Database persistence (replace filesystem)
 - Authentication

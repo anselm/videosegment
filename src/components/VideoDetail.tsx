@@ -1,10 +1,49 @@
 import { useParams, Link } from 'react-router-dom'
 import { useVideoStore } from '../hooks/useVideoStore'
+import { useEffect, useState } from 'react'
+import { Video } from '../types/Video'
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const { getVideo } = useVideoStore()
-  const video = id ? getVideo(id) : null
+  const { getVideo, fetchVideo } = useVideoStore()
+  const [video, setVideo] = useState<Video | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadVideo = async () => {
+      if (!id) return
+      
+      setLoading(true)
+      try {
+        // Try to get from local state first
+        const localVideo = getVideo(id)
+        if (localVideo) {
+          setVideo(localVideo)
+        }
+        
+        // Fetch fresh data from server
+        const freshVideo = await fetchVideo(id)
+        setVideo(freshVideo)
+      } catch (error) {
+        console.error('Error loading video:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadVideo()
+  }, [id, getVideo, fetchVideo])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Link to="/" className="text-gray-400 hover:text-white mb-4 inline-block">
+          ← Back to list
+        </Link>
+        <p>Loading...</p>
+      </div>
+    )
+  }
 
   if (!video) {
     return (

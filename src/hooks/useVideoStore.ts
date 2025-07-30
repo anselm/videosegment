@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react'
 import { Video } from '../types/Video'
-// import { api } from '../services/api'
-
-const STORAGE_KEY = 'video-transcription-app-videos'
+import { api } from '../services/api'
 
 export const useVideoStore = () => {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Fetch videos on mount
   useEffect(() => {
-    // For now, continue using localStorage
-    // In the future, this will fetch from the API
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      setVideos(JSON.parse(stored))
-    }
+    fetchVideos()
   }, [])
 
-  const saveVideos = (newVideos: Video[]) => {
-    setVideos(newVideos)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newVideos))
+  const fetchVideos = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const response = await api.getVideos()
+      setVideos(response.videos)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch videos')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const addVideo = async (url: string) => {
@@ -28,19 +31,12 @@ export const useVideoStore = () => {
     setError(null)
     
     try {
-      // For now, continue with local implementation
-      // In the future, this will call: const result = await api.addVideo(url)
-      const newVideo: Video = {
-        id: Date.now().toString(),
-        url,
-        title: `Video ${videos.length + 1}`,
-        addedAt: new Date(),
-      }
-      saveVideos([...videos, newVideo])
-      
-      // TODO: In the future, trigger server-side processing here
+      const newVideo = await api.addVideo(url)
+      setVideos([newVideo, ...videos])
+      return newVideo
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add video')
+      throw err
     } finally {
       setLoading(false)
     }
@@ -50,14 +46,47 @@ export const useVideoStore = () => {
     return videos.find(v => v.id === id)
   }
 
-  const updateVideo = async (id: string, updates: Partial<Video>) => {
-    // For now, continue with local implementation
-    // In the future, this will call: await api.updateVideo(id, updates)
-    const updatedVideos = videos.map(v => 
-      v.id === id ? { ...v, ...updates } : v
-    )
-    saveVideos(updatedVideos)
+  const fetchVideo = async (id: string) => {
+    try {
+      const video = await api.getVideo(id)
+      // Update local state with fetched video
+      setVideos(prevVideos => {
+        const index = prevVideos.findIndex(v => v.id === id)
+        if (index >= 0) {
+          const newVideos = [...prevVideos]
+          newVideos[index] = video
+          return newVideos
+        }
+        return [...prevVideos, video]
+      })
+      return video
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch video')
+      throw err
+    }
   }
 
-  return { videos, addVideo, getVideo, updateVideo, loading, error }
+  const updateVideo = async (id: string, updates: Partial<Video>) => {
+    try {
+      const updatedVideo = await api.updateVideo(id, updates)
+      setVideos(prevVideos => 
+        prevVideos.map(v => v.id === id ? updatedVideo : v)
+      )
+      return updatedVideo
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update video')
+      throw err
+    }
+  }
+
+  return { 
+    videos, 
+    addVideo, 
+    getVideo, 
+    fetchVideo,
+    updateVideo, 
+    loading, 
+    error,
+    refetch: fetchVideos
+  }
 }
