@@ -16,6 +16,12 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Check for required environment variables
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn('WARNING: ANTHROPIC_API_KEY not set in environment variables');
+  console.warn('Video processing will fail without this key');
+}
+
 // Data directory for storing video files
 const DATA_DIR = join(__dirname, '../data/videos');
 
@@ -31,7 +37,11 @@ async function ensureDataDir() {
 ensureDataDir();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'http://localhost:3000'
+    : ['http://localhost:5173', 'http://localhost:3000']
+}));
 app.use(express.json());
 
 // Helper functions
@@ -81,9 +91,41 @@ function extractVideoTitle(url) {
   return videoId ? `YouTube Video ${videoId}` : 'Untitled Video';
 }
 
+function isValidYouTubeUrl(url) {
+  const patterns = [
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+    /^(https?:\/\/)?(www\.)?youtube\.com\/embed\/([^&\n?#]+)/,
+    /^(https?:\/\/)?(www\.)?youtube\.com\/v\/([^&\n?#]+)/
+  ];
+  
+  return patterns.some(pattern => pattern.test(url));
+}
+
 // API Routes
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    checks: {
+      dataDir: false,
+      anthropicKey: !!process.env.ANTHROPIC_API_KEY
+    }
+  };
+  
+  // Check if data directory is accessible
+  try {
+    await fs.access(DATA_DIR);
+    health.checks.dataDir = true;
+  } catch (error) {
+    health.status = 'degraded';
+  }
+  
+  if (!health.checks.anthropicKey) {
+    health.status = 'degraded';
+    health.message = 'ANTHROPIC_API_KEY not configured - video processing will fail';
+  }
+  
+  res.json(health);
 });
 
 // Get all videos
@@ -104,6 +146,10 @@ app.post('/api/videos', async (req, res) => {
     
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
+    }
+    
+    if (!isValidYouTubeUrl(url)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL format' });
     }
     
     // Generate unique ID

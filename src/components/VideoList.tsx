@@ -9,8 +9,13 @@ const VideoList = () => {
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (inputUrl.trim()) {
-      await addVideo(inputUrl.trim())
-      setInputUrl('')
+      try {
+        await addVideo(inputUrl.trim())
+        setInputUrl('')
+      } catch (error) {
+        // Error is already displayed by the error state
+        console.error('Failed to add video:', error)
+      }
     }
   }
 

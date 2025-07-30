@@ -17,8 +17,23 @@ export async function getTranscript(videoUrl) {
     }
 
     // Fetch transcript
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    let transcript;
+    try {
+      transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    } catch (error) {
+      if (error.message.includes('Transcript is disabled')) {
+        throw new Error('Transcripts are disabled for this video');
+      } else if (error.message.includes('Could not find')) {
+        throw new Error('No transcript available for this video');
+      }
+      throw error;
+    }
     
+    // Validate transcript data
+    if (!transcript || transcript.length === 0) {
+      throw new Error('Empty transcript received');
+    }
+
     // Combine all text segments
     const fullText = transcript
       .map(item => item.text)

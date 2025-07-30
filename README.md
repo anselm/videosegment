@@ -99,6 +99,7 @@ Create a `.env` file in the root directory with:
 PORT=3001
 NODE_ENV=development
 ANTHROPIC_API_KEY=your_claude_api_key_here
+FRONTEND_URL=http://localhost:5173
 ```
 
 ## Future Enhancements
