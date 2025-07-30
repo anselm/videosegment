@@ -11,6 +11,7 @@
     "build:serve": "npm run build && npm run server",
     "server": "node server/index.js",
     "start": "NODE_ENV=production npm run server",
+    "serve": "npm run server",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

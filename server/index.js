@@ -271,31 +271,35 @@ app.post('/api/videos/:id/process', async (req, res) => {
   }
 });
 
-// Serve static files from the React app
-if (process.env.NODE_ENV === 'production') {
-  // In production, serve the built React app
-  app.use(express.static(join(__dirname, '../dist')));
+// Check if dist directory exists
+const distPath = join(__dirname, '../dist');
+const distExists = await fs.access(distPath).then(() => true).catch(() => false);
+
+if (distExists) {
+  // Serve the built React app
+  app.use(express.static(distPath));
   
   app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, '../dist', 'index.html'));
+    res.sendFile(join(distPath, 'index.html'));
   });
+  console.log('Serving built React app from /dist');
 } else {
-  // In development, provide a helpful message
+  // In development or when dist doesn't exist, provide a helpful message
   app.get('/', (req, res) => {
     res.send(`
       <html>
         <body style="font-family: sans-serif; padding: 2rem;">
           <h1>Video Transcription App - API Server</h1>
           <p>This is the API server running on port ${PORT}.</p>
-          <p>To use the application:</p>
+          <p>The React app hasn't been built yet.</p>
+          <p>To build and serve the app:</p>
           <ul>
-            <li>Run <code>npm run dev</code> to start both the frontend and backend</li>
-            <li>Access the app at <a href="http://localhost:5173">http://localhost:5173</a></li>
+            <li>Run <code>npm run build</code> to build the React app</li>
+            <li>Then restart the server with <code>npm run server</code></li>
           </ul>
-          <p>Or build and serve the production version:</p>
+          <p>Or use the combined command:</p>
           <ul>
             <li>Run <code>npm run build:serve</code></li>
-            <li>Access the app at <a href="http://localhost:${PORT}">http://localhost:${PORT}</a></li>
           </ul>
           <h2>API Endpoints:</h2>
           <ul>
