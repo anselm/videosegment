@@ -271,15 +271,48 @@ app.post('/api/videos/:id/process', async (req, res) => {
   }
 });
 
-// Serve static files from the React app in production
+// Serve static files from the React app
 if (process.env.NODE_ENV === 'production') {
+  // In production, serve the built React app
   app.use(express.static(join(__dirname, '../dist')));
   
   app.get('*', (req, res) => {
     res.sendFile(join(__dirname, '../dist', 'index.html'));
   });
+} else {
+  // In development, provide a helpful message
+  app.get('/', (req, res) => {
+    res.send(`
+      <html>
+        <body style="font-family: sans-serif; padding: 2rem;">
+          <h1>Video Transcription App - API Server</h1>
+          <p>This is the API server running on port ${PORT}.</p>
+          <p>To use the application:</p>
+          <ul>
+            <li>Run <code>npm run dev</code> to start both the frontend and backend</li>
+            <li>Access the app at <a href="http://localhost:5173">http://localhost:5173</a></li>
+          </ul>
+          <p>Or build and serve the production version:</p>
+          <ul>
+            <li>Run <code>npm run build:serve</code></li>
+            <li>Access the app at <a href="http://localhost:${PORT}">http://localhost:${PORT}</a></li>
+          </ul>
+          <h2>API Endpoints:</h2>
+          <ul>
+            <li><a href="/api/health">/api/health</a> - Health check</li>
+            <li>/api/videos - Get all videos</li>
+            <li>/api/videos/:id - Get video details</li>
+          </ul>
+        </body>
+      </html>
+    `);
+  });
 }
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Frontend dev server should be running on http://localhost:5173`);
+    console.log(`Run 'npm run dev' to start both servers`);
+  }
 });
