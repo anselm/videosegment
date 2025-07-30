@@ -39,9 +39,14 @@ A React + Express application for managing YouTube video transcriptions and segm
    npm run server
    ```
 
-   Or use the combined command:
+   Or use the combined command to build and serve:
    ```bash
-   npm run build:prod
+   npm run build:serve
+   ```
+
+   For production deployment:
+   ```bash
+   npm run start
    ```
 
 ## Project Structure
