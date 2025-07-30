@@ -54,7 +54,9 @@ const VideoList = () => {
       )}
 
       <div className="space-y-4">
-        {videos.length === 0 ? (
+        {loading && videos.length === 0 ? (
+          <p className="text-gray-500">Loading videos...</p>
+        ) : videos.length === 0 ? (
           <p className="text-gray-500">No videos added yet. Add a YouTube URL to get started.</p>
         ) : (
           videos.map((video) => {

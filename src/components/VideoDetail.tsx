@@ -142,7 +142,7 @@ const VideoDetail = () => {
                 {video.segments && video.segments.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">
-                      Detected {video.segments.length} segments, 
+                      Detected {video.segments.length} segments, {' '}
                       {video.segments.filter(s => s.type === 'step').length} steps
                     </p>
                   </div>
@@ -160,12 +160,16 @@ const VideoDetail = () => {
         <div className="border border-white p-4">
           {video.segments && video.segments.length > 0 ? (
             <div className="space-y-4">
-              {video.segments.map((segment, index) => (
+              {video.segments.map((segment, index) => {
+                const stepNumber = segment.type === 'step' 
+                  ? video.segments.filter((s, i) => i < index && s.type === 'step').length + 1
+                  : null;
+                return (
                 <div key={segment.id} className="p-4 border border-gray-700">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-semibold text-lg">
-                        {segment.type === 'step' && `Step ${index + 1}: `}
+                        {stepNumber && `Step ${stepNumber}: `}
                         {segment.title || `Segment ${index + 1}`}
                       </h3>
                       <span className="text-sm text-gray-400">
@@ -211,7 +215,7 @@ const VideoDetail = () => {
                     <p className="whitespace-pre-wrap">{segment.text}</p>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <p className="text-gray-500">Segments will appear here after processing</p>
