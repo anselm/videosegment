@@ -162,7 +162,7 @@ const VideoDetail = () => {
             <div className="space-y-4">
               {video.segments.map((segment, index) => {
                 const stepNumber = segment.type === 'step' 
-                  ? video.segments?.filter((s, i) => i < index && s.type === 'step').length + 1
+                  ? (video.segments?.filter((s, i) => i < index && s.type === 'step').length ?? 0) + 1
                   : null;
                 return (
                 <div key={segment.id} className="p-4 border border-gray-700">
