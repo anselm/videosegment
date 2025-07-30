@@ -36,4 +36,18 @@ export const api = {
     if (!response.ok) throw new Error('Failed to update video');
     return response.json();
   },
+
+  async processVideo(id: string) {
+    const response = await fetch(`${API_BASE_URL}/api/videos/${id}/process`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to process video');
+    }
+    return response.json();
+  },
 };

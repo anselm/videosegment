@@ -74,6 +74,16 @@ const VideoList = () => {
                       Added: {new Date(video.addedAt).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-500 truncate">{video.url}</p>
+                    {video.status && (
+                      <p className="text-sm text-gray-400 mt-1">
+                        Status: <span className={
+                          video.status === 'completed' ? 'text-green-500' :
+                          video.status === 'error' ? 'text-red-500' :
+                          video.status === 'processing' ? 'text-yellow-500' :
+                          'text-gray-500'
+                        }>{video.status}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </Link>

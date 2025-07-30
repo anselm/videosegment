@@ -79,12 +79,26 @@ export const useVideoStore = () => {
     }
   }
 
+  const processVideo = async (id: string) => {
+    try {
+      const processedVideo = await api.processVideo(id)
+      setVideos(prevVideos => 
+        prevVideos.map(v => v.id === id ? processedVideo : v)
+      )
+      return processedVideo
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process video')
+      throw err
+    }
+  }
+
   return { 
     videos, 
     addVideo, 
     getVideo, 
     fetchVideo,
-    updateVideo, 
+    updateVideo,
+    processVideo, 
     loading, 
     error,
     refetch: fetchVideos

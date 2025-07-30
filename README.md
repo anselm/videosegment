@@ -69,20 +69,32 @@ A React + Express application for managing YouTube video transcriptions and segm
 - `GET /api/videos` - Get all videos
 - `POST /api/videos` - Add a new video
 - `GET /api/videos/:id` - Get video details
-- `PUT /api/videos/:id` - Update video (future)
+- `PUT /api/videos/:id` - Update video
+- `POST /api/videos/:id/process` - Process video (fetch transcript and segment)
 
 ## Features
 
 - Add YouTube videos by URL
 - View video list with thumbnails
 - Video detail page with embedded player
-- Placeholder for transcription display
-- Placeholder for segmentation display
+- Automatic YouTube transcript fetching
+- AI-powered transcript segmentation using Claude
 - Server-side filesystem storage (JSON files)
+- Processing status tracking
 
 ## Data Storage
 
 Videos are stored as JSON files in the `data/videos/` directory on the server. Each video is saved as a separate file with its unique ID as the filename.
+
+## Environment Variables
+
+Create a `.env` file in the root directory with:
+
+```
+PORT=3001
+NODE_ENV=development
+ANTHROPIC_API_KEY=your_claude_api_key_here
+```
 
 ## Future Enhancements
 

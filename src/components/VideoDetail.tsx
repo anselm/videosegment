@@ -2,12 +2,14 @@ import { useParams, Link } from 'react-router-dom'
 import { useVideoStore } from '../hooks/useVideoStore'
 import { useEffect, useState } from 'react'
 import { Video } from '../types/Video'
+import { api } from '../services/api'
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { getVideo, fetchVideo } = useVideoStore()
   const [video, setVideo] = useState<Video | null>(null)
   const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -63,13 +65,45 @@ const VideoDetail = () => {
 
   const videoId = extractVideoId(video.url)
 
+  const handleProcess = async () => {
+    if (!id) return
+    
+    setProcessing(true)
+    try {
+      const processedVideo = await api.processVideo(id)
+      setVideo(processedVideo)
+    } catch (error) {
+      console.error('Error processing video:', error)
+      alert(error instanceof Error ? error.message : 'Failed to process video')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <Link to="/" className="text-gray-400 hover:text-white mb-4 inline-block">
         ← Back to list
       </Link>
       
-      <h1 className="text-3xl font-bold mb-6">{video.title}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">{video.title}</h1>
+        {!video.transcript && (
+          <button
+            onClick={handleProcess}
+            disabled={processing || video.status === 'processing'}
+            className="px-6 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {processing || video.status === 'processing' ? 'Processing...' : 'Process Video'}
+          </button>
+        )}
+      </div>
+
+      {video.status === 'error' && video.error && (
+        <div className="mb-4 p-4 border border-red-500 text-red-500">
+          Error: {video.error}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>

@@ -6,6 +6,7 @@ import { dirname, join } from 'path';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { getTranscript, segmentTranscript } from './services/transcription.js';
 
 dotenv.config();
 
@@ -167,6 +168,60 @@ app.put('/api/videos/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating video:', error);
     res.status(500).json({ error: 'Failed to update video' });
+  }
+});
+
+// Process video (transcription and segmentation)
+app.post('/api/videos/:id/process', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    // Update status to processing
+    video.status = 'processing';
+    await writeVideoData(id, video);
+    
+    // Get transcript
+    console.log(`Fetching transcript for video ${id}...`);
+    const transcript = await getTranscript(video.url);
+    
+    // Update video with transcript
+    video.transcript = transcript.fullText;
+    video.rawTranscript = transcript.rawSegments;
+    video.status = 'transcribed';
+    await writeVideoData(id, video);
+    
+    // Segment the transcript
+    console.log(`Segmenting transcript for video ${id}...`);
+    const segments = await segmentTranscript(transcript, video.url);
+    
+    // Update video with segments
+    video.segments = segments;
+    video.status = 'completed';
+    video.processedAt = new Date().toISOString();
+    await writeVideoData(id, video);
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Error processing video:', error);
+    
+    // Update video status to error
+    try {
+      const video = await readVideoData(id);
+      if (video) {
+        video.status = 'error';
+        video.error = error.message;
+        await writeVideoData(id, video);
+      }
+    } catch (updateError) {
+      console.error('Error updating video status:', updateError);
+    }
+    
+    res.status(500).json({ error: error.message });
   }
 });
 
