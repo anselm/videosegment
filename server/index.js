@@ -6,8 +6,9 @@ import { dirname, join } from 'path';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import multer from 'multer';
 import { getTranscript, segmentTranscript } from './services/transcription.js';
-import { downloadVideo, extractAudio } from './services/videoProcessor.js';
+import { downloadVideo } from './services/videoProcessor.js';
 
 dotenv.config();
 
@@ -25,17 +26,47 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 // Data directory for storing video files
 const DATA_DIR = join(__dirname, '../data/videos');
+const UPLOAD_DIR = join(__dirname, '../data/videos/uploads');
 
-// Ensure data directory exists
-async function ensureDataDir() {
+// Ensure data directories exist
+async function ensureDataDirs() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
   } catch (error) {
-    console.error('Error creating data directory:', error);
+    console.error('Error creating data directories:', error);
   }
 }
 
-ensureDataDir();
+ensureDataDirs();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueId = crypto.randomBytes(16).toString('hex');
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueId}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 500 * 1024 * 1024 // 500MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.ogg'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed types: ' + allowedTypes.join(', ')));
+    }
+  }
+});
 
 // Middleware
 app.use(cors({
@@ -165,7 +196,7 @@ app.get('/api/videos', async (req, res) => {
   }
 });
 
-// Add a new video
+// Add a new video from URL
 app.post('/api/videos', async (req, res) => {
   try {
     const { url } = req.body;
@@ -202,6 +233,42 @@ app.post('/api/videos', async (req, res) => {
   } catch (error) {
     console.error('Error adding video:', error);
     res.status(500).json({ error: 'Failed to add video' });
+  }
+});
+
+// Upload a video file
+app.post('/api/videos/upload', upload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No video file provided' });
+    }
+    
+    // Generate unique ID
+    const id = crypto.randomBytes(16).toString('hex');
+    
+    // Create video object
+    const video = {
+      id,
+      url: `file://${req.file.path}`,
+      videoType: 'upload',
+      title: req.body.title || req.file.originalname || 'Uploaded Video',
+      originalFilename: req.file.originalname,
+      addedAt: new Date().toISOString(),
+      transcript: null,
+      segments: [],
+      localVideoPath: req.file.path,
+      audioPath: null,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype
+    };
+    
+    // Save to filesystem
+    await writeVideoData(id, video);
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Error uploading video:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload video' });
   }
 });
 

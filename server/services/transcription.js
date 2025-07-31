@@ -23,7 +23,7 @@ export async function getTranscript(videoUrl, videoType, videoId) {
       console.log(`[Transcription] Extracted YouTube video ID: ${youtubeId}`);
       return await getYouTubeTranscript(youtubeId);
     } else {
-      // Handle non-YouTube videos
+      // Handle non-YouTube videos (including uploads)
       console.log(`[Transcription] Processing non-YouTube video: ${videoType}`);
       return await getVideoFileTranscript(videoUrl, videoType, videoId);
     }
@@ -35,8 +35,16 @@ export async function getTranscript(videoUrl, videoType, videoId) {
 
 async function getVideoFileTranscript(videoUrl, videoType, videoId) {
   try {
-    // Download the video
-    const videoPath = await downloadVideo(videoUrl, videoId, videoType);
+    let videoPath;
+    
+    if (videoType === 'upload' && videoUrl.startsWith('file://')) {
+      // For uploaded files, use the path directly
+      videoPath = videoUrl.replace('file://', '');
+      console.log(`[Transcription] Using uploaded video file: ${videoPath}`);
+    } else {
+      // Download the video
+      videoPath = await downloadVideo(videoUrl, videoId, videoType);
+    }
     
     // Transcribe video directly using WhisperX
     const transcript = await transcribeVideo(videoPath, videoId);
