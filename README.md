@@ -11,43 +11,54 @@ A React + Express application for managing YouTube video transcriptions and segm
 
 ## Getting Started
 
-### Development
+### Quick Start (Recommended)
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+The easiest way to run the application is using the combined build and serve command:
 
-2. Run both frontend and backend in development mode:
-   ```bash
-   npm run dev
-   ```
+```bash
+# Install dependencies
+npm install
 
-   This will start:
-   - Frontend dev server on http://localhost:5173
-   - Backend API server on http://localhost:3001
+# Build the React app and start the server
+npm run build:serve
+```
 
-### Production Build
+This single command will:
+1. Build the React frontend into optimized static files
+2. Start the Express server which serves both the API and the built frontend
+3. Open http://localhost:3001 in your browser
 
-1. Build the frontend:
-   ```bash
-   npm run build
-   ```
+**Note:** The frontend and backend are integrated - the Express server serves the React app. You don't need to run them separately in production mode.
 
-2. Start the production server:
-   ```bash
-   npm run server
-   ```
+### Development Mode
 
-   Or use the combined command to build and serve:
-   ```bash
-   npm run build:serve
-   ```
+For active development with hot reloading:
 
-   For production deployment:
-   ```bash
-   npm run start
-   ```
+```bash
+npm run dev
+```
+
+This starts:
+- Frontend dev server with hot reload on http://localhost:5173
+- Backend API server on http://localhost:3001
+- Automatic proxying between them
+
+### Production Deployment
+
+For production environments:
+
+```bash
+# Build the frontend first
+npm run build
+
+# Then start the production server
+npm run start
+```
+
+Or use the combined command:
+```bash
+npm run build:serve
+```
 
 ## Project Structure
 
@@ -67,7 +78,8 @@ A React + Express application for managing YouTube video transcriptions and segm
 
 - `GET /api/health` - Health check
 - `GET /api/videos` - Get all videos
-- `POST /api/videos` - Add a new video
+- `POST /api/videos` - Add a new video from URL
+- `POST /api/videos/upload` - Upload a video file directly
 - `GET /api/videos/:id` - Get video details
 - `PUT /api/videos/:id` - Update video
 - `POST /api/videos/:id/transcribe` - Transcribe video only
@@ -76,22 +88,35 @@ A React + Express application for managing YouTube video transcriptions and segm
 
 ## Features
 
-- Add videos from multiple sources:
+- **Multiple Video Sources**:
   - YouTube videos (with automatic caption fetching)
   - Google Drive videos
   - Direct video file URLs
-- View video list with thumbnails (YouTube only)
-- Video detail page with embedded player (YouTube only)
-- Automatic YouTube transcript fetching
-- Video download and audio extraction for non-YouTube sources
-- AI-powered transcript segmentation using Claude
-- Server-side filesystem storage (JSON files)
-- Processing status tracking
-- Smart segmentation based on signal phrases:
-  - **Step detection**: "Next step", "New Step", "Moving on", etc.
-  - **Key points**: "Key Point", "This is important", "Remember", etc.
-  - **Warnings**: "Watch out", "Be careful", "Warning", "Dangerous"
-- Visual highlighting of warnings (red) and key points (yellow)
+  - Upload local video files (MOV, MP4, AVI, WebM, MKV, OGG)
+  
+- **Transcription**:
+  - Automatic YouTube caption extraction
+  - WhisperX integration for audio transcription
+  - Direct MOV file support without preprocessing
+  
+- **AI-Powered Segmentation**:
+  - Smart segmentation using Claude AI
+  - Signal phrase detection:
+    - **Step markers**: "Next step", "New Step", "Moving on", etc.
+    - **Key points**: "Key Point", "This is important", "Remember", etc.
+    - **Warnings**: "Watch out", "Be careful", "Warning", "Dangerous"
+  - Visual highlighting: warnings (red), key points (yellow)
+  
+- **User Interface**:
+  - Video list with thumbnails (YouTube)
+  - Embedded video player (YouTube)
+  - Real-time processing status
+  - File upload with drag-and-drop support
+  
+- **Technical Features**:
+  - Server-side filesystem storage (JSON)
+  - Concurrent request handling
+  - Progress tracking for long operations
 
 ## Data Storage
 
@@ -170,9 +195,37 @@ The WhisperX container is configured to:
 
 ## Future Enhancements
 
-- Server-side video processing
-- YouTube API integration
-- Transcription service integration
-- Video segmentation algorithm
-- Database persistence (replace filesystem)
-- Authentication
+### Immediate Improvements
+- **Database Integration**: Replace filesystem storage with PostgreSQL/MongoDB for better scalability
+- **Authentication & User Management**: Add user accounts with OAuth2 support
+- **Background Job Queue**: Implement Redis/Bull for processing long-running transcription tasks
+- **Real-time Updates**: Add WebSocket support for live transcription progress
+- **Batch Processing**: Support multiple video uploads and processing
+
+### Advanced Features
+- **Multi-language Support**: Extend WhisperX to handle multiple languages with auto-detection
+- **Custom Vocabulary**: Allow users to add domain-specific terms for better transcription accuracy
+- **Export Options**: Generate SRT/VTT subtitles, PDF transcripts, and chapter markers
+- **Video Editing Integration**: Add trim/cut functionality before transcription
+- **Collaborative Features**: Share and collaborate on video segments with team members
+
+### AI Enhancements
+- **Smart Summarization**: Generate executive summaries of video content
+- **Topic Extraction**: Automatically identify and tag main topics discussed
+- **Speaker Diarization**: Identify and label different speakers in the video
+- **Sentiment Analysis**: Analyze tone and sentiment throughout the video
+- **Custom AI Prompts**: Allow users to define their own segmentation rules
+
+### Platform Integrations
+- **Cloud Storage**: Direct integration with Dropbox, OneDrive, and S3
+- **Video Platforms**: Support for Vimeo, Dailymotion, and other platforms
+- **LMS Integration**: Export to Moodle, Canvas, and other learning platforms
+- **API & Webhooks**: Full REST API for third-party integrations
+- **Mobile Apps**: Native iOS/Android apps for on-the-go access
+
+### Performance & Scale
+- **CDN Integration**: Serve videos through CloudFront or similar
+- **Horizontal Scaling**: Kubernetes deployment with auto-scaling
+- **Caching Layer**: Redis caching for frequently accessed transcripts
+- **GPU Acceleration**: Support for CUDA-enabled WhisperX processing
+- **Streaming Transcription**: Process videos while they're being uploaded
