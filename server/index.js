@@ -221,7 +221,105 @@ app.put('/api/videos/:id', async (req, res) => {
   }
 });
 
-// Process video (transcription and segmentation)
+// Transcribe video
+app.post('/api/videos/:id/transcribe', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    // Update status to processing
+    video.status = 'transcribing';
+    await writeVideoData(id, video);
+    
+    // Get transcript
+    console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
+    const transcript = await getTranscript(video.url);
+    console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
+    
+    // Update video with transcript
+    video.transcript = transcript.fullText;
+    video.rawTranscript = transcript.rawSegments;
+    video.status = 'transcribed';
+    video.transcribedAt = new Date().toISOString();
+    await writeVideoData(id, video);
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Error transcribing video:', error);
+    
+    // Update video status to error
+    try {
+      const video = await readVideoData(id);
+      if (video) {
+        video.status = 'error';
+        video.error = error.message;
+        await writeVideoData(id, video);
+      }
+    } catch (updateError) {
+      console.error('Error updating video status:', updateError);
+    }
+    
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Segment video transcript
+app.post('/api/videos/:id/segment', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    if (!video.transcript || !video.rawTranscript) {
+      return res.status(400).json({ error: 'Video must be transcribed before segmentation' });
+    }
+    
+    // Update status to segmenting
+    video.status = 'segmenting';
+    await writeVideoData(id, video);
+    
+    // Segment the transcript
+    console.log(`[Server] Segmenting transcript for video ${id}...`);
+    const transcript = {
+      fullText: video.transcript,
+      rawSegments: video.rawTranscript
+    };
+    const segments = await segmentTranscript(transcript, video.url);
+    
+    // Update video with segments
+    video.segments = segments;
+    video.status = 'completed';
+    video.segmentedAt = new Date().toISOString();
+    await writeVideoData(id, video);
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Error segmenting video:', error);
+    
+    // Update video status to error
+    try {
+      const video = await readVideoData(id);
+      if (video) {
+        video.status = 'error';
+        video.error = error.message;
+        await writeVideoData(id, video);
+      }
+    } catch (updateError) {
+      console.error('Error updating video status:', updateError);
+    }
+    
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Process video (transcription and segmentation) - kept for backward compatibility
 app.post('/api/videos/:id/process', async (req, res) => {
   try {
     const { id } = req.params;
@@ -244,6 +342,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     video.transcript = transcript.fullText;
     video.rawTranscript = transcript.rawSegments;
     video.status = 'transcribed';
+    video.transcribedAt = new Date().toISOString();
     await writeVideoData(id, video);
     
     // Segment the transcript
@@ -254,6 +353,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     video.segments = segments;
     video.status = 'completed';
     video.processedAt = new Date().toISOString();
+    video.segmentedAt = new Date().toISOString();
     await writeVideoData(id, video);
     
     res.json(video);

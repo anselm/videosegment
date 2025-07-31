@@ -5,9 +5,11 @@ export interface Video {
   addedAt: string // ISO date string from server
   transcript?: string | null
   segments?: VideoSegment[]
-  status?: 'pending' | 'processing' | 'transcribed' | 'completed' | 'error'
+  status?: 'pending' | 'processing' | 'transcribing' | 'transcribed' | 'segmenting' | 'completed' | 'error'
   error?: string
   processedAt?: string
+  transcribedAt?: string
+  segmentedAt?: string
   rawTranscript?: any[]
 }
 

@@ -47,6 +47,34 @@ export const api = {
     return response.json();
   },
 
+  async transcribeVideo(id: string) {
+    const response = await fetch(`/api/videos/${id}/transcribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to transcribe video');
+    }
+    return response.json();
+  },
+
+  async segmentVideo(id: string) {
+    const response = await fetch(`/api/videos/${id}/segment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to segment video');
+    }
+    return response.json();
+  },
+
   async processVideo(id: string) {
     const response = await fetch(`/api/videos/${id}/process`, {
       method: 'POST',

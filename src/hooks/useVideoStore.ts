@@ -82,6 +82,32 @@ export const useVideoStore = () => {
     }
   }
 
+  const transcribeVideo = async (id: string) => {
+    try {
+      const transcribedVideo = await api.transcribeVideo(id)
+      setVideos(prevVideos => 
+        prevVideos.map(v => v.id === id ? transcribedVideo : v)
+      )
+      return transcribedVideo
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to transcribe video')
+      throw err
+    }
+  }
+
+  const segmentVideo = async (id: string) => {
+    try {
+      const segmentedVideo = await api.segmentVideo(id)
+      setVideos(prevVideos => 
+        prevVideos.map(v => v.id === id ? segmentedVideo : v)
+      )
+      return segmentedVideo
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to segment video')
+      throw err
+    }
+  }
+
   const processVideo = async (id: string) => {
     try {
       const processedVideo = await api.processVideo(id)
@@ -101,6 +127,8 @@ export const useVideoStore = () => {
     getVideo, 
     fetchVideo,
     updateVideo,
+    transcribeVideo,
+    segmentVideo,
     processVideo, 
     loading, 
     error,

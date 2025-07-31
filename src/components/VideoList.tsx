@@ -85,8 +85,9 @@ const VideoList = () => {
                       <p className="text-sm text-gray-400 mt-1">
                         Status: <span className={
                           video.status === 'completed' ? 'text-green-500' :
+                          video.status === 'transcribed' ? 'text-blue-500' :
                           video.status === 'error' ? 'text-red-500' :
-                          video.status === 'processing' ? 'text-yellow-500' :
+                          video.status === 'processing' || video.status === 'transcribing' || video.status === 'segmenting' ? 'text-yellow-500' :
                           'text-gray-500'
                         }>{video.status}</span>
                       </p>

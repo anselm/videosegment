@@ -70,6 +70,36 @@ const VideoDetail = () => {
 
   const videoId = extractVideoId(video.url)
 
+  const handleTranscribe = async () => {
+    if (!id) return
+    
+    setProcessing(true)
+    try {
+      const transcribedVideo = await api.transcribeVideo(id)
+      setVideo(transcribedVideo)
+    } catch (error) {
+      console.error('Error transcribing video:', error)
+      alert(error instanceof Error ? error.message : 'Failed to transcribe video')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleSegment = async () => {
+    if (!id) return
+    
+    setProcessing(true)
+    try {
+      const segmentedVideo = await api.segmentVideo(id)
+      setVideo(segmentedVideo)
+    } catch (error) {
+      console.error('Error segmenting video:', error)
+      alert(error instanceof Error ? error.message : 'Failed to segment video')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const handleProcess = async () => {
     if (!id) return
     
@@ -93,15 +123,35 @@ const VideoDetail = () => {
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{video.title}</h1>
-        {!video.transcript && (
-          <button
-            onClick={handleProcess}
-            disabled={processing || video.status === 'processing'}
-            className="px-6 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processing || video.status === 'processing' ? 'Processing...' : 'Process Video'}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {!video.transcript && (
+            <button
+              onClick={handleTranscribe}
+              disabled={processing || video.status === 'transcribing'}
+              className="px-4 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing || video.status === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
+            </button>
+          )}
+          {video.transcript && !video.segments && (
+            <button
+              onClick={handleSegment}
+              disabled={processing || video.status === 'segmenting'}
+              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing || video.status === 'segmenting' ? 'Segmenting...' : 'Segment'}
+            </button>
+          )}
+          {!video.transcript && (
+            <button
+              onClick={handleProcess}
+              disabled={processing || video.status === 'processing'}
+              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing || video.status === 'processing' ? 'Processing...' : 'Process All'}
+            </button>
+          )}
+        </div>
       </div>
 
       {video.status === 'error' && video.error && (

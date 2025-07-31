@@ -70,7 +70,9 @@ A React + Express application for managing YouTube video transcriptions and segm
 - `POST /api/videos` - Add a new video
 - `GET /api/videos/:id` - Get video details
 - `PUT /api/videos/:id` - Update video
-- `POST /api/videos/:id/process` - Process video (fetch transcript and segment)
+- `POST /api/videos/:id/transcribe` - Transcribe video only
+- `POST /api/videos/:id/segment` - Segment video (requires transcript)
+- `POST /api/videos/:id/process` - Process video (transcribe + segment)
 
 ## Features
 
