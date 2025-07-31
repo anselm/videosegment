@@ -1,7 +1,7 @@
 export interface Video {
   id: string
   url: string
-  videoType?: 'youtube' | 'googledrive' | 'direct' | 'unknown'
+  videoType?: 'youtube' | 'googledrive' | 'direct' | 'upload' | 'unknown'
   title: string
   addedAt: string // ISO date string from server
   transcript?: string | null
@@ -14,6 +14,9 @@ export interface Video {
   rawTranscript?: any[]
   localVideoPath?: string | null
   audioPath?: string | null
+  originalFilename?: string
+  fileSize?: number
+  mimeType?: string
 }
 
 export interface VideoSegment {
