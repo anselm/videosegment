@@ -1,7 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
-import { downloadVideo, extractAudio, transcribeAudio } from './videoProcessor.js';
+import { downloadVideo, transcribeVideo } from './videoProcessor.js';
 
 dotenv.config();
 
@@ -38,19 +38,16 @@ async function getVideoFileTranscript(videoUrl, videoType, videoId) {
     // Download the video
     const videoPath = await downloadVideo(videoUrl, videoId, videoType);
     
-    // Extract audio from video
-    const audioPath = await extractAudio(videoPath, videoId);
-    
-    // Transcribe audio using WhisperX
-    const transcript = await transcribeAudio(audioPath, videoId);
+    // Transcribe video directly using WhisperX
+    const transcript = await transcribeVideo(videoPath, videoId);
     
     console.log(`[Transcription] Video file transcript obtained: ${transcript.fullText.length} characters`);
     
     return transcript;
   } catch (error) {
     console.error('Error processing video file:', error);
-    if (error.message.includes('WhisperX Docker container is not running')) {
-      throw new Error('WhisperX is not running. Please start it with: npm run docker:whisper:start');
+    if (error.message.includes('WhisperX service is not running')) {
+      throw new Error('WhisperX service is not running. Please ensure it is running on port 9010.');
     }
     throw new Error(`Failed to process video file: ${error.message}`);
   }
