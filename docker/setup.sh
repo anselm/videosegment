@@ -8,9 +8,9 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    echo "Error: Docker Compose is not installed. Please install Docker Compose first."
+# Check if Docker Compose is available
+if ! docker compose version &> /dev/null; then
+    echo "Error: Docker Compose is not available. Please ensure Docker Desktop is installed with Compose plugin."
     exit 1
 fi
 
@@ -26,7 +26,7 @@ mkdir -p ../data/videos/files
 
 # Start the container
 echo "Starting WhisperX container..."
-docker-compose up -d
+docker compose up -d
 
 # Check if container is running
 if docker ps | grep -q whisperx-service; then
@@ -37,6 +37,6 @@ if docker ps | grep -q whisperx-service; then
     echo "To stop: npm run docker:whisper:stop"
 else
     echo "❌ Failed to start WhisperX container"
-    echo "Check logs with: docker-compose logs"
+    echo "Check logs with: docker compose logs"
     exit 1
 fi

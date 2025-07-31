@@ -4,8 +4,8 @@ This directory contains the Docker configuration for running WhisperX, which is 
 
 ## Prerequisites
 
-- Docker installed on your system
-- Docker Compose installed
+- Docker Desktop installed on your system (includes Docker Compose plugin)
+- Or Docker Engine with Docker Compose plugin installed
 
 ## Starting WhisperX
 
@@ -18,7 +18,7 @@ npm run docker:whisper:start
 Or manually from the docker directory:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Stopping WhisperX
@@ -30,7 +30,7 @@ npm run docker:whisper:stop
 Or manually:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## Configuration
