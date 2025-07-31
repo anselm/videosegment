@@ -236,8 +236,9 @@ app.post('/api/videos/:id/process', async (req, res) => {
     await writeVideoData(id, video);
     
     // Get transcript
-    console.log(`Fetching transcript for video ${id}...`);
+    console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
     const transcript = await getTranscript(video.url);
+    console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
     // Update video with transcript
     video.transcript = transcript.fullText;

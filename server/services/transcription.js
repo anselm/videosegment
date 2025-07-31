@@ -10,36 +10,58 @@ const anthropic = new Anthropic({
 
 export async function getTranscript(videoUrl) {
   try {
+    console.log(`[Transcription] Processing URL: ${videoUrl}`);
+    
     // Extract video ID from URL
     const videoId = extractVideoId(videoUrl);
     if (!videoId) {
-      throw new Error('Invalid YouTube URL');
+      throw new Error(`Invalid YouTube URL: ${videoUrl}`);
     }
+    
+    console.log(`[Transcription] Extracted video ID: ${videoId}`);
 
     // Fetch transcript
     let transcript;
     try {
+      console.log(`[Transcription] Attempting to fetch transcript for video ID: ${videoId}`);
       transcript = await YoutubeTranscript.fetchTranscript(videoId);
+      console.log(`[Transcription] Raw transcript response:`, transcript ? `${transcript.length} segments` : 'null/undefined');
+      
+      // Log first few segments for debugging
+      if (transcript && transcript.length > 0) {
+        console.log(`[Transcription] First segment:`, transcript[0]);
+      }
     } catch (error) {
+      console.error(`[Transcription] Error fetching transcript:`, error.message);
       if (error.message.includes('Transcript is disabled')) {
         throw new Error('Transcripts are disabled for this video');
       } else if (error.message.includes('Could not find')) {
         throw new Error('No transcript available for this video');
+      } else if (error.message.includes('not available')) {
+        throw new Error('Transcript not available for this video (may be auto-generated only)');
       }
       throw error;
     }
     
     // Validate transcript data
     if (!transcript || transcript.length === 0) {
-      throw new Error('Empty transcript received');
+      console.warn(`[Transcription] Empty transcript received for video ID: ${videoId}`);
+      throw new Error('Empty transcript received - the video may not have captions enabled or may be restricted');
     }
 
     // Combine all text segments
     const fullText = transcript
-      .map(item => item.text)
+      .map(item => item.text || '')
+      .filter(text => text.length > 0)
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
+
+    if (!fullText || fullText.length === 0) {
+      throw new Error('Transcript segments contain no text content');
+    }
+
+    console.log(`[Transcription] Successfully extracted transcript: ${fullText.length} characters`);
 
     // Return both raw segments and combined text
     return {
