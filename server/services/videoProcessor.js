@@ -106,7 +106,7 @@ export async function transcribeAudio(audioPath, videoId) {
     }
     
     // Run WhisperX in the Docker container
-    const command = `docker exec whisperx-service whisperx /audio/${audioFileName} --model base --language en --device cpu --output_format json --output_dir /transcripts`;
+    const command = `docker exec whisperx-service whisperx /app/audio/${audioFileName} --model base --language en --device cpu --output_format json --output_dir /app/output`;
     
     console.log(`[VideoProcessor] Running WhisperX command: ${command}`);
     const { stdout, stderr } = await execAsync(command);

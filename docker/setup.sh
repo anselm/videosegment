@@ -16,7 +16,7 @@ fi
 
 # Pull the WhisperX image
 echo "Pulling WhisperX Docker image..."
-docker pull thomasvvugt/whisperx:latest
+docker pull jim60105/whisperx:latest
 
 # Create necessary directories
 echo "Creating data directories..."

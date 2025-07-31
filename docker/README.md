@@ -38,9 +38,9 @@ docker compose down
 The WhisperX service is configured to:
 - Use the `base` model by default (you can change this to `small`, `medium`, `large`, etc.)
 - Run on CPU by default (change `DEVICE=cuda` if you have GPU support)
-- Mount the audio directory for input files
-- Mount the transcripts directory for output files
-- Expose port 9000 for the API (if needed)
+- Mount the audio directory for input files at `/app/audio`
+- Mount the transcripts directory for output files at `/app/output`
+- Uses the jim60105/whisperx Docker image
 
 ## Checking Status
 
