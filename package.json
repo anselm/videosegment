@@ -13,7 +13,11 @@
     "start": "NODE_ENV=production npm run server",
     "serve": "npm run server",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docker:whisper:start": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker:whisper:stop": "docker-compose -f docker/docker-compose.yml down",
+    "docker:whisper:logs": "docker-compose -f docker/docker-compose.yml logs -f",
+    "docker:whisper:restart": "npm run docker:whisper:stop && npm run docker:whisper:start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.1",

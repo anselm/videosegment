@@ -112,13 +112,61 @@ FRONTEND_URL=http://localhost:5173
 
 For processing non-YouTube videos, you need:
 
+- **Docker** and **Docker Compose** installed on your system
+  - [Install Docker](https://docs.docker.com/get-docker/)
+  - Docker Compose is included with Docker Desktop
+
 - **FFmpeg** installed on your system for audio extraction
   - macOS: `brew install ffmpeg`
   - Ubuntu/Debian: `sudo apt-get install ffmpeg`
   - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
 
-- **Whisper** (future requirement) for speech-to-text on non-YouTube videos
-  - Will be implemented as a Docker container or API service
+- **WhisperX** Docker container for speech-to-text on non-YouTube videos
+  - Automatically pulled when you run the setup
+
+## WhisperX Setup
+
+WhisperX is used for transcribing non-YouTube videos. It runs in a Docker container.
+
+### Quick Start
+
+1. Start WhisperX container:
+   ```bash
+   npm run docker:whisper:start
+   ```
+
+2. Check if it's running:
+   ```bash
+   docker ps | grep whisperx-service
+   ```
+
+3. View logs:
+   ```bash
+   npm run docker:whisper:logs
+   ```
+
+4. Stop when done:
+   ```bash
+   npm run docker:whisper:stop
+   ```
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+```bash
+cd docker
+chmod +x setup.sh
+./setup.sh
+```
+
+### WhisperX Configuration
+
+The WhisperX container is configured to:
+- Use the `base` model (can be changed in `docker/docker-compose.yml`)
+- Run on CPU by default (change to `cuda` for GPU support)
+- Process audio files from `data/videos/audio/`
+- Save transcripts to `data/videos/transcripts/`
 
 ## Future Enhancements
 

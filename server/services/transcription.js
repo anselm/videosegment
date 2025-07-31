@@ -41,12 +41,17 @@ async function getVideoFileTranscript(videoUrl, videoType, videoId) {
     // Extract audio from video
     const audioPath = await extractAudio(videoPath, videoId);
     
-    // Transcribe audio
+    // Transcribe audio using WhisperX
     const transcript = await transcribeAudio(audioPath, videoId);
+    
+    console.log(`[Transcription] Video file transcript obtained: ${transcript.fullText.length} characters`);
     
     return transcript;
   } catch (error) {
     console.error('Error processing video file:', error);
+    if (error.message.includes('WhisperX Docker container is not running')) {
+      throw new Error('WhisperX is not running. Please start it with: npm run docker:whisper:start');
+    }
     throw new Error(`Failed to process video file: ${error.message}`);
   }
 }

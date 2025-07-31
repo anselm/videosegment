@@ -86,17 +86,76 @@ export async function extractAudio(videoPath, videoId) {
 }
 
 export async function transcribeAudio(audioPath, videoId) {
-  // Placeholder for Whisper integration
-  // In production, this would call a Whisper API or run a dockerized Whisper instance
-  console.log(`[VideoProcessor] Transcribing audio from ${audioPath}`);
-  
-  // For now, return a placeholder
-  throw new Error('Audio transcription not yet implemented. Whisper integration required.');
-  
-  // Future implementation:
-  // const whisperCommand = `docker run --rm -v ${AUDIO_DIR}:/audio whisper:latest /audio/${videoId}.wav`;
-  // const result = await execAsync(whisperCommand);
-  // return parseWhisperOutput(result.stdout);
+  try {
+    console.log(`[VideoProcessor] Transcribing audio from ${audioPath} using WhisperX`);
+    
+    const audioFileName = path.basename(audioPath);
+    const transcriptDir = path.join(process.cwd(), 'data', 'videos', 'transcripts');
+    
+    // Ensure transcript directory exists
+    await fs.mkdir(transcriptDir, { recursive: true });
+    
+    // Check if WhisperX container is running
+    try {
+      const { stdout } = await execAsync('docker ps --format "{{.Names}}" | grep whisperx-service');
+      if (!stdout.trim()) {
+        throw new Error('WhisperX Docker container is not running. Please run: npm run docker:whisper:start');
+      }
+    } catch (error) {
+      throw new Error('WhisperX Docker container is not running. Please run: npm run docker:whisper:start');
+    }
+    
+    // Run WhisperX in the Docker container
+    const command = `docker exec whisperx-service whisperx /audio/${audioFileName} --model base --language en --device cpu --output_format json --output_dir /transcripts`;
+    
+    console.log(`[VideoProcessor] Running WhisperX command: ${command}`);
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr && !stderr.includes('WARNING')) {
+      console.error('[VideoProcessor] WhisperX stderr:', stderr);
+    }
+    
+    // Read the generated transcript file
+    const transcriptPath = path.join(transcriptDir, `${path.parse(audioFileName).name}.json`);
+    
+    // Wait a bit for the file to be written
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check if transcript file exists
+    try {
+      await fs.access(transcriptPath);
+    } catch (error) {
+      throw new Error(`Transcript file not found at ${transcriptPath}. WhisperX may have failed.`);
+    }
+    
+    const transcriptData = await fs.readFile(transcriptPath, 'utf-8');
+    const transcript = JSON.parse(transcriptData);
+    
+    // Convert WhisperX format to our format
+    const segments = transcript.segments || [];
+    const fullText = segments.map(seg => seg.text).join(' ').trim();
+    
+    // Convert to our expected format
+    const formattedTranscript = {
+      rawSegments: segments.map(seg => ({
+        text: seg.text,
+        start: seg.start,
+        duration: seg.end - seg.start,
+        offset: seg.start * 1000 // Convert to milliseconds
+      })),
+      fullText: fullText
+    };
+    
+    console.log(`[VideoProcessor] Transcription complete: ${fullText.length} characters`);
+    
+    // Clean up transcript file
+    await fs.unlink(transcriptPath).catch(() => {});
+    
+    return formattedTranscript;
+  } catch (error) {
+    console.error('[VideoProcessor] Error transcribing audio:', error);
+    throw new Error(`Failed to transcribe audio: ${error.message}`);
+  }
 }
 
 function extractGoogleDriveId(url) {

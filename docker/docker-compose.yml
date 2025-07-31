@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  whisperx:
+    image: thomasvvugt/whisperx:latest
+    container_name: whisperx-service
+    volumes:
+      - ../data/videos/audio:/audio
+      - ../data/videos/transcripts:/transcripts
+    environment:
+      - WHISPER_MODEL=base
+      - DEVICE=cpu  # Change to 'cuda' if you have GPU support
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    command: ["python", "-m", "whisperx", "--model", "base", "--language", "en", "--device", "cpu", "--output_format", "json", "--output_dir", "/transcripts"]

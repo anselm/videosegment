@@ -2,6 +2,7 @@
 .aider*
 node_modules
 data/
+docker/transcripts/
 # Logs
 logs
 *.log
