@@ -1,12 +1,14 @@
+version: "3.9"
+
 services:
   whisperx:
-    image: ghcr.io/jim60105/whisperx:latest
-    container_name: whisperx-service
-    volumes:
-      - ../data/videos/audio:/app/audio
-      - ../data/videos/transcripts:/app/output
+    build: .
+    container_name: whisperx-api
+    ports:
+      - "9010:9000"
     environment:
       - WHISPER_MODEL=base
-      - DEVICE=cpu  # Change to 'cuda' if you have GPU support
+      - DEVICE=cpu
+      - COMPUTE_TYPE=float32
     restart: unless-stopped
-    command: ["--model", "base", "--language", "en", "--device", "cpu", "--output_format", "json", "--output_dir", "/app/output"]
+

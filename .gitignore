@@ -1,3 +1,9 @@
+data
+data/*
+dist/*
+dist
+testdata
+testdata/*
 .env
 .aider*
 node_modules
