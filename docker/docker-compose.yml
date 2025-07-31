@@ -1,6 +1,6 @@
 services:
   whisperx:
-    image: jim60105/whisperx:latest
+    image: ghcr.io/jim60105/whisperx:latest
     container_name: whisperx-service
     volumes:
       - ../data/videos/audio:/app/audio

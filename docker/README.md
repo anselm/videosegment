@@ -40,7 +40,7 @@ The WhisperX service is configured to:
 - Run on CPU by default (change `DEVICE=cuda` if you have GPU support)
 - Mount the audio directory for input files at `/app/audio`
 - Mount the transcripts directory for output files at `/app/output`
-- Uses the jim60105/whisperx Docker image
+- Uses the ghcr.io/jim60105/whisperx Docker image from GitHub Container Registry
 
 ## Checking Status
 
