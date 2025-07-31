@@ -167,8 +167,12 @@ For each segment, provide:
 
 The video URL is: ${videoUrl}
 
-Here's the transcript with timestamps:
-${JSON.stringify(transcript.rawSegments, null, 2)}
+Here's the transcript with timestamps (each segment has text, start time, and end time):
+${JSON.stringify(transcript.rawSegments.map(seg => ({
+  text: seg.text,
+  startTime: seg.start || seg.offset / 1000 || 0,
+  endTime: seg.end || ((seg.offset + seg.duration) / 1000) || 0
+})), null, 2)}
 
 Please return the segments in the following JSON format:
 {

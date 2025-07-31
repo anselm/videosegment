@@ -162,6 +162,11 @@ const VideoDetail = () => {
               Tip: Try a different video that has captions/subtitles enabled. You can check if a video has captions by looking for the "CC" button in the YouTube player.
             </p>
           )}
+          {video.error.includes('ANTHROPIC_API_KEY') && (
+            <p className="text-sm mt-2">
+              Please ensure your ANTHROPIC_API_KEY is set in the .env file for segmentation to work.
+            </p>
+          )}
         </div>
       )}
       
@@ -202,7 +207,14 @@ const VideoDetail = () => {
         </div>
         
         <div>
-          <h2 className="text-xl font-semibold mb-4">Transcript</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Transcript
+            {video.rawTranscript && video.rawTranscript.length > 0 && (
+              <span className="text-sm text-gray-400 ml-2">
+                ({video.rawTranscript.length} segments with timestamps)
+              </span>
+            )}
+          </h2>
           <div className="border border-white p-4 min-h-[400px] max-h-[600px] overflow-y-auto">
             {video.transcript ? (
               <div>
@@ -215,14 +227,20 @@ const VideoDetail = () => {
                 ) : (
                   <p className="whitespace-pre-wrap">{video.transcript}</p>
                 )}
-                {video.segments && video.segments.length > 0 && (
+                {video.segments && video.segments.length > 0 ? (
                   <div className="mt-4 pt-4 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">
-                      Detected {video.segments.length} segments, {' '}
+                      ✓ Segmented into {video.segments.length} sections, {' '}
                       {video.segments.filter(s => s.type === 'step').length} steps
                     </p>
                   </div>
-                )}
+                ) : video.transcript && (!video.segments || video.segments.length === 0) ? (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <p className="text-sm text-yellow-500">
+                      ⚠️ Transcript ready but not segmented. Click "Segment" button above to organize into sections.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="text-gray-500">Transcript will appear here after processing</p>

@@ -81,22 +81,30 @@ export async function transcribeVideo(videoPath, videoId) {
     
     const transcript = await response.json();
     
+    // Log the response structure for debugging
+    console.log(`[VideoProcessor] WhisperX response structure:`, {
+      hasSegments: !!transcript.segments,
+      segmentCount: transcript.segments?.length || 0,
+      firstSegment: transcript.segments?.[0] || null
+    });
+    
     // Convert WhisperX format to our format
     const segments = transcript.segments || [];
     const fullText = segments.map(seg => seg.text).join(' ').trim();
     
-    // Convert to our expected format
+    // Convert to our expected format with proper timestamps
     const formattedTranscript = {
       rawSegments: segments.map(seg => ({
         text: seg.text,
         start: seg.start,
+        end: seg.end,
         duration: seg.end - seg.start,
         offset: seg.start * 1000 // Convert to milliseconds
       })),
       fullText: fullText
     };
     
-    console.log(`[VideoProcessor] Transcription complete: ${fullText.length} characters`);
+    console.log(`[VideoProcessor] Transcription complete: ${fullText.length} characters, ${segments.length} segments with timestamps`);
     
     return formattedTranscript;
   } catch (error) {
