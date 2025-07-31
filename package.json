@@ -17,7 +17,8 @@
     "docker:whisper:start": "docker compose -f docker/docker-compose.yml up -d",
     "docker:whisper:stop": "docker compose -f docker/docker-compose.yml down",
     "docker:whisper:logs": "docker compose -f docker/docker-compose.yml logs -f",
-    "docker:whisper:restart": "npm run docker:whisper:stop && npm run docker:whisper:start"
+    "docker:whisper:restart": "npm run docker:whisper:stop && npm run docker:whisper:start",
+    "test:whisperx": "chmod +x test/whisperx-test.sh && ./test/whisperx-test.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.1",
