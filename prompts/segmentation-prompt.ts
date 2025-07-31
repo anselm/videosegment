@@ -80,3 +80,6 @@ Remember:
 - Include all text between startTime and endTime in the "text" field`;
 
 export const SYSTEM_PROMPT = 'You are a helpful assistant that analyzes video transcripts and creates meaningful segments. Always respond with valid JSON only, no additional text or markdown.';
+
+// Note: This prompt is designed to work with both Claude and Ollama models
+// For best results with Ollama, use models like llama3.2:latest or gemma3:1b

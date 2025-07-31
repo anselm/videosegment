@@ -89,9 +89,15 @@ const SYSTEM_PROMPT = 'You are a helpful assistant that analyzes video transcrip
 
 dotenv.config();
 
-const anthropic = new Anthropic({
+// LLM Configuration
+const LLM_PROVIDER = process.env.LLM_PROVIDER || 'claude'; // 'claude' or 'ollama'
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:latest';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+
+// Initialize Anthropic client only if using Claude
+const anthropic = LLM_PROVIDER === 'claude' ? new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
+}) : null;
 
 export async function getTranscript(videoUrl, videoType, videoId) {
   try {
@@ -204,14 +210,49 @@ async function getYouTubeTranscript(youtubeId) {
   }
 }
 
+async function callOllama(prompt, systemPrompt) {
+  try {
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: `${systemPrompt}\n\n${prompt}`,
+        stream: false,
+        options: {
+          temperature: 0,
+          num_predict: 4000,
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.response;
+  } catch (error) {
+    console.error('[Ollama] Error calling Ollama API:', error);
+    throw error;
+  }
+}
+
 export async function segmentTranscript(transcript, videoUrl) {
   try {
-    if (!process.env.ANTHROPIC_API_KEY) {
+    // Validate LLM configuration
+    if (LLM_PROVIDER === 'claude' && !process.env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY not configured. Please add it to your .env file.');
     }
 
-    console.log('[Segmentation] Starting transcript segmentation...');
+    console.log(`[Segmentation] Starting transcript segmentation using ${LLM_PROVIDER}...`);
     console.log(`[Segmentation] Transcript has ${transcript.rawSegments.length} raw segments`);
+    
+    if (LLM_PROVIDER === 'ollama') {
+      console.log(`[Segmentation] Using Ollama model: ${OLLAMA_MODEL}`);
+    }
 
     // Prepare the transcript data with timestamps
     const transcriptData = transcript.rawSegments.map(seg => ({
@@ -228,23 +269,33 @@ Video URL: ${videoUrl}
 Transcript with timestamps:
 ${JSON.stringify(transcriptData, null, 2)}`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      temperature: 0,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ]
-    });
+    let responseText;
+    
+    if (LLM_PROVIDER === 'claude') {
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        temperature: 0,
+        system: SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ]
+      });
 
-    console.log('[Segmentation] Received response from Claude');
+      console.log('[Segmentation] Received response from Claude');
+      responseText = message.content[0].text.trim();
+    } else if (LLM_PROVIDER === 'ollama') {
+      console.log('[Segmentation] Sending request to Ollama...');
+      responseText = await callOllama(userPrompt, SYSTEM_PROMPT);
+      console.log('[Segmentation] Received response from Ollama');
+    } else {
+      throw new Error(`Unsupported LLM provider: ${LLM_PROVIDER}`);
+    }
 
-    // Parse the response - Claude should return only JSON
-    const responseText = message.content[0].text.trim();
+    // Parse the response - LLM should return only JSON
     
     let result;
     try {
@@ -256,7 +307,7 @@ ${JSON.stringify(transcriptData, null, 2)}`;
       // Try to extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('Claude did not return valid JSON. Response: ' + responseText.substring(0, 200));
+        throw new Error(`${LLM_PROVIDER} did not return valid JSON. Response: ` + responseText.substring(0, 200));
       }
       
       result = JSON.parse(jsonMatch[0]);
