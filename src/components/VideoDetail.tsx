@@ -10,6 +10,7 @@ const VideoDetail = () => {
   const [video, setVideo] = useState<Video | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [showJson, setShowJson] = useState(false)
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -274,10 +275,60 @@ const VideoDetail = () => {
       </div>
       
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Segments</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Segments</h2>
+          {video.segments && video.segments.length > 0 && (
+            <button
+              onClick={() => setShowJson(!showJson)}
+              className="px-4 py-2 bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 transition-colors text-sm"
+            >
+              {showJson ? 'Show Visual' : 'Show JSON'}
+            </button>
+          )}
+        </div>
         <div className="border border-white p-4">
           {video.segments && video.segments.length > 0 ? (
-            <div className="space-y-4">
+            showJson ? (
+              <div>
+                <div className="mb-2 text-sm text-gray-400">
+                  Click to select all, then copy:
+                </div>
+                <pre 
+                  className="bg-gray-900 p-4 overflow-x-auto text-sm cursor-text select-all"
+                  onClick={(e) => {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(e.currentTarget);
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                  }}
+                >
+{JSON.stringify({
+  videoId: video.id,
+  title: video.title,
+  url: video.url,
+  videoType: video.videoType,
+  transcribedAt: video.transcribedAt,
+  segmentedAt: video.segmentedAt,
+  segments: video.segments.map(segment => ({
+    id: segment.id,
+    title: segment.title,
+    type: segment.type,
+    startTime: segment.startTime,
+    endTime: segment.endTime,
+    duration: segment.endTime - segment.startTime,
+    text: segment.text,
+    keyPoints: segment.keyPoints || [],
+    warnings: segment.warnings || []
+  }))
+}, null, 2)}
+                </pre>
+                <div className="mt-2 text-xs text-gray-500">
+                  Tip: Triple-click to select all, or click once and press Ctrl/Cmd+A then Ctrl/Cmd+C to copy
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {video.segments.map((segment, index) => {
                 const stepNumber = segment.type === 'step' 
                   ? (video.segments?.filter((s, i) => i < index && s.type === 'step').length ?? 0) + 1
@@ -334,7 +385,8 @@ const VideoDetail = () => {
                   </div>
                 </div>
               )})}
-            </div>
+              </div>
+            )
           ) : (
             <p className="text-gray-500">Segments will appear here after processing</p>
           )}
