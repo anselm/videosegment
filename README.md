@@ -19,22 +19,33 @@ The easiest way to run the application is using the combined build and serve com
 # Install dependencies
 npm install
 
+# Start WhisperX Docker container (required for video transcription)
+npm run docker:whisper:start
+
 # Build the React app and start the server
 npm run build:serve
 ```
 
-This single command will:
-1. Build the React frontend into optimized static files
-2. Start the Express server which serves both the API and the built frontend
-3. Open http://localhost:3001 in your browser
+This will:
+1. Install all required dependencies
+2. Start the WhisperX service on port 9010 for video transcription
+3. Build the React frontend into optimized static files
+4. Start the Express server which serves both the API and the built frontend
+5. Open http://localhost:3001 in your browser
 
 **Note:** The frontend and backend are integrated - the Express server serves the React app. You don't need to run them separately in production mode.
+
+**Important:** WhisperX is required for transcribing uploaded videos and non-YouTube content. YouTube videos with captions don't require WhisperX.
 
 ### Development Mode
 
 For active development with hot reloading:
 
 ```bash
+# Start WhisperX if you plan to transcribe videos
+npm run docker:whisper:start
+
+# Start development servers
 npm run dev
 ```
 
@@ -42,6 +53,7 @@ This starts:
 - Frontend dev server with hot reload on http://localhost:5173
 - Backend API server on http://localhost:3001
 - Automatic proxying between them
+- WhisperX service on port 9010 (if started)
 
 ### Production Deployment
 
@@ -135,23 +147,18 @@ FRONTEND_URL=http://localhost:5173
 
 ## System Requirements
 
-For processing non-YouTube videos, you need:
-
-- **Docker** and **Docker Compose** installed on your system
+- **Node.js** 16+ and npm
+- **Docker** and **Docker Compose** for WhisperX transcription service
   - [Install Docker](https://docs.docker.com/get-docker/)
   - Docker Compose is included with Docker Desktop
+- **WhisperX** Docker container for transcribing uploaded videos and non-YouTube content
+  - Automatically pulled when you run `npm run docker:whisper:start`
 
-- **FFmpeg** installed on your system for audio extraction
-  - macOS: `brew install ffmpeg`
-  - Ubuntu/Debian: `sudo apt-get install ffmpeg`
-  - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
-
-- **WhisperX** Docker container for speech-to-text on non-YouTube videos
-  - Automatically pulled when you run the setup
+Note: FFmpeg is no longer required as WhisperX handles video processing internally.
 
 ## WhisperX Setup
 
-WhisperX is used for transcribing non-YouTube videos. It runs in a Docker container.
+WhisperX is used for transcribing uploaded videos and non-YouTube content. YouTube videos with captions are transcribed using the YouTube API and don't require WhisperX.
 
 ### Quick Start
 
@@ -162,7 +169,7 @@ WhisperX is used for transcribing non-YouTube videos. It runs in a Docker contai
 
 2. Check if it's running:
    ```bash
-   docker ps | grep whisperx-service
+   docker ps | grep whisperx-api
    ```
 
 3. View logs:
@@ -174,6 +181,14 @@ WhisperX is used for transcribing non-YouTube videos. It runs in a Docker contai
    ```bash
    npm run docker:whisper:stop
    ```
+
+### Troubleshooting
+
+If WhisperX fails to start:
+- Ensure Docker is running: `docker info`
+- Check port 9010 is available: `lsof -i :9010` (macOS/Linux)
+- Restart Docker and try again
+- Check logs: `npm run docker:whisper:logs`
 
 ### Manual Setup
 
