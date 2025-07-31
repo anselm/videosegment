@@ -2,6 +2,7 @@ import { YoutubeTranscript } from 'youtube-transcript';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { downloadVideo, transcribeVideo } from './videoProcessor.js';
+import { SEGMENTATION_PROMPT, SYSTEM_PROMPT } from '../../prompts/segmentation-prompt.js';
 
 dotenv.config();
 
@@ -123,121 +124,89 @@ async function getYouTubeTranscript(youtubeId) {
 export async function segmentTranscript(transcript, videoUrl) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
+      throw new Error('ANTHROPIC_API_KEY not configured. Please add it to your .env file.');
     }
 
-    const prompt = `You are a video content analyzer. I will provide you with a transcript from a YouTube video. Your task is to segment this transcript based on specific signal phrases and create structured content.
+    console.log('[Segmentation] Starting transcript segmentation...');
+    console.log(`[Segmentation] Transcript has ${transcript.rawSegments.length} raw segments`);
 
-IMPORTANT SIGNAL PHRASES TO DETECT:
+    // Prepare the transcript data with timestamps
+    const transcriptData = transcript.rawSegments.map(seg => ({
+      text: seg.text,
+      startTime: seg.start || seg.offset / 1000 || 0,
+      endTime: seg.end || ((seg.offset + seg.duration) / 1000) || 0
+    }));
 
-1. STEP/SEGMENT TRIGGERS (these phrases indicate a new segment/step):
-   - "Next step"
-   - "New Step"
-   - "Step complete"
-   - "Now we will"
-   - "Break here"
-   - "Let's move on"
-   - "Moving on"
-   - "End Step"
+    // Build the prompt
+    const userPrompt = `${SEGMENTATION_PROMPT}
 
-2. KEY POINT/REASON TRIGGERS (mark these as important highlights):
-   - "Key Point"
-   - "Key Reason"
-   - "This is important"
-   - "An important point"
-   - "Remember"
-   - "Something to remember"
-   - "You want to do this because"
-   - "The reason we do this is"
+Video URL: ${videoUrl}
 
-3. WARNING TRIGGERS (these need special emphasis):
-   - "Watch out"
-   - "Be careful"
-   - "Warning"
-   - "Dangerous"
-
-For each segment, provide:
-1. A title that summarizes the main topic or step
-2. The start time (in seconds)
-3. The end time (in seconds)
-4. The full text content of the segment
-5. Any key points found within the segment
-6. Any warnings found within the segment
-7. The type of segment (step, general, or auto-detected)
-
-The video URL is: ${videoUrl}
-
-Here's the transcript with timestamps (each segment has text, start time, and end time):
-${JSON.stringify(transcript.rawSegments.map(seg => ({
-  text: seg.text,
-  startTime: seg.start || seg.offset / 1000 || 0,
-  endTime: seg.end || ((seg.offset + seg.duration) / 1000) || 0
-})), null, 2)}
-
-Please return the segments in the following JSON format:
-{
-  "segments": [
-    {
-      "id": "unique-id",
-      "title": "Segment Title",
-      "startTime": 0,
-      "endTime": 120,
-      "text": "Full text content of this segment",
-      "type": "step" | "general",
-      "keyPoints": [
-        {
-          "text": "Important point text",
-          "timestamp": 45
-        }
-      ],
-      "warnings": [
-        {
-          "text": "Warning text",
-          "timestamp": 60
-        }
-      ]
-    }
-  ]
-}
-
-IMPORTANT: 
-- Look for the signal phrases (case-insensitive) to determine segment boundaries
-- When you find a step trigger phrase, create a new segment starting from that point
-- Extract key points and warnings based on the trigger phrases
-- If no explicit signal phrases are found, create logical segments based on topic changes
-- Include the actual spoken text in the segments, not just summaries`;
+Transcript with timestamps:
+${JSON.stringify(transcriptData, null, 2)}`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
       max_tokens: 4000,
       temperature: 0,
-      system: 'You are a helpful assistant that analyzes video transcripts and creates meaningful segments. Always respond with valid JSON.',
+      system: SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
-          content: prompt
+          content: userPrompt
         }
       ]
     });
 
-    // Parse the response
-    const responseText = message.content[0].text;
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to parse segmentation response');
-    }
+    console.log('[Segmentation] Received response from Claude');
 
-    const result = JSON.parse(jsonMatch[0]);
+    // Parse the response - Claude should return only JSON
+    const responseText = message.content[0].text.trim();
     
-    // Add unique IDs if not present
-    if (result.segments) {
-      result.segments = result.segments.map((seg, index) => ({
-        ...seg,
-        id: seg.id || `segment-${Date.now()}-${index}`
-      }));
+    let result;
+    try {
+      // Try to parse the response directly
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[Segmentation] Failed to parse response as JSON:', responseText);
+      
+      // Try to extract JSON from the response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Claude did not return valid JSON. Response: ' + responseText.substring(0, 200));
+      }
+      
+      result = JSON.parse(jsonMatch[0]);
     }
 
-    return result.segments || [];
+    // Validate the response structure
+    if (!result.segments || !Array.isArray(result.segments)) {
+      throw new Error('Invalid response structure: missing segments array');
+    }
+
+    console.log(`[Segmentation] Successfully parsed ${result.segments.length} segments`);
+
+    // Validate and clean up segments
+    const validatedSegments = result.segments.map((seg, index) => {
+      // Ensure required fields
+      if (typeof seg.startTime !== 'number' || typeof seg.endTime !== 'number') {
+        console.warn(`[Segmentation] Segment ${index} missing valid timestamps:`, seg);
+      }
+
+      return {
+        id: seg.id || `segment-${Date.now()}-${index}`,
+        title: seg.title || `Segment ${index + 1}`,
+        startTime: Number(seg.startTime) || 0,
+        endTime: Number(seg.endTime) || 0,
+        text: seg.text || '',
+        type: seg.type || 'general',
+        keyPoints: Array.isArray(seg.keyPoints) ? seg.keyPoints : [],
+        warnings: Array.isArray(seg.warnings) ? seg.warnings : []
+      };
+    });
+
+    console.log('[Segmentation] Segmentation complete');
+    return validatedSegments;
   } catch (error) {
     console.error('Error segmenting transcript:', error);
     throw new Error(`Failed to segment transcript: ${error.message}`);

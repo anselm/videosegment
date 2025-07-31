@@ -19,7 +19,8 @@
     "docker:whisper:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "docker:whisper:restart": "npm run docker:whisper:stop && npm run docker:whisper:start",
     "test:whisperx": "chmod +x test/whisperx-test.sh && ./test/whisperx-test.sh",
-    "test:quick": "chmod +x test/quick-test.sh && ./test/quick-test.sh"
+    "test:quick": "chmod +x test/quick-test.sh && ./test/quick-test.sh",
+    "test:segmentation": "node test/test-segmentation.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.1",
