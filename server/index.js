@@ -237,17 +237,22 @@ app.post('/api/videos/:id/transcribe', async (req, res) => {
     
     // Get transcript
     console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
-    const transcript = await getTranscript(video.url);
-    console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
+    try {
+      const transcript = await getTranscript(video.url);
+      console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
-    // Update video with transcript
-    video.transcript = transcript.fullText;
-    video.rawTranscript = transcript.rawSegments;
-    video.status = 'transcribed';
-    video.transcribedAt = new Date().toISOString();
-    await writeVideoData(id, video);
-    
-    res.json(video);
+      // Update video with transcript
+      video.transcript = transcript.fullText;
+      video.rawTranscript = transcript.rawSegments;
+      video.status = 'transcribed';
+      video.transcribedAt = new Date().toISOString();
+      await writeVideoData(id, video);
+      
+      res.json(video);
+    } catch (transcriptError) {
+      console.error(`[Server] Failed to fetch transcript for video ${id}:`, transcriptError.message);
+      throw transcriptError;
+    }
   } catch (error) {
     console.error('Error transcribing video:', error);
     

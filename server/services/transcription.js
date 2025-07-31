@@ -34,11 +34,13 @@ export async function getTranscript(videoUrl) {
     } catch (error) {
       console.error(`[Transcription] Error fetching transcript:`, error.message);
       if (error.message.includes('Transcript is disabled')) {
-        throw new Error('Transcripts are disabled for this video');
+        throw new Error('Captions are disabled for this video. Please try a video with captions enabled.');
       } else if (error.message.includes('Could not find')) {
-        throw new Error('No transcript available for this video');
+        throw new Error('No captions found for this video. The video must have captions/subtitles for transcription.');
       } else if (error.message.includes('not available')) {
-        throw new Error('Transcript not available for this video (may be auto-generated only)');
+        throw new Error('Captions not available for this video. This may be due to age restrictions or regional limitations.');
+      } else if (error.message.includes('video is private')) {
+        throw new Error('This video is private and cannot be accessed.');
       }
       throw error;
     }
@@ -46,7 +48,7 @@ export async function getTranscript(videoUrl) {
     // Validate transcript data
     if (!transcript || transcript.length === 0) {
       console.warn(`[Transcription] Empty transcript received for video ID: ${videoId}`);
-      throw new Error('Empty transcript received - the video may not have captions enabled or may be restricted');
+      throw new Error('No captions available for this video. The video must have captions/subtitles enabled for transcription to work.');
     }
 
     // Combine all text segments

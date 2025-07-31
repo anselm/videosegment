@@ -156,7 +156,12 @@ const VideoDetail = () => {
 
       {video.status === 'error' && video.error && (
         <div className="mb-4 p-4 border border-red-500 text-red-500">
-          Error: {video.error}
+          <p className="font-semibold">Error: {video.error}</p>
+          {video.error.includes('captions') && (
+            <p className="text-sm mt-2">
+              Tip: Try a different video that has captions/subtitles enabled. You can check if a video has captions by looking for the "CC" button in the YouTube player.
+            </p>
+          )}
         </div>
       )}
       
