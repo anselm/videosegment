@@ -99,7 +99,7 @@ const anthropic = LLM_PROVIDER === 'claude' ? new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 }) : null;
 
-export async function getTranscript(videoUrl, videoType, videoId) {
+export async function getTranscript(videoUrl, videoType, videoId, llmConfig = {}) {
   try {
     console.log(`[Transcription] Processing URL: ${videoUrl}, Type: ${videoType}`);
     
@@ -211,6 +211,10 @@ async function getYouTubeTranscript(youtubeId) {
 }
 
 async function callOllama(prompt, systemPrompt) {
+  return callOllamaWithModel(prompt, systemPrompt, OLLAMA_MODEL);
+}
+
+async function callOllamaWithModel(prompt, systemPrompt, model) {
   try {
     const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
       method: 'POST',
@@ -218,7 +222,7 @@ async function callOllama(prompt, systemPrompt) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model: model,
         prompt: `${systemPrompt}\n\n${prompt}`,
         stream: false,
         options: {
@@ -240,18 +244,22 @@ async function callOllama(prompt, systemPrompt) {
   }
 }
 
-export async function segmentTranscript(transcript, videoUrl) {
+export async function segmentTranscript(transcript, videoUrl, llmConfig = {}) {
   try {
+    // Use provided config or fall back to environment variables
+    const provider = llmConfig.llmProvider || LLM_PROVIDER;
+    const model = llmConfig.ollamaModel || OLLAMA_MODEL;
+    
     // Validate LLM configuration
-    if (LLM_PROVIDER === 'claude' && !process.env.ANTHROPIC_API_KEY) {
+    if (provider === 'claude' && !process.env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY not configured. Please add it to your .env file.');
     }
 
-    console.log(`[Segmentation] Starting transcript segmentation using ${LLM_PROVIDER}...`);
+    console.log(`[Segmentation] Starting transcript segmentation using ${provider}...`);
     console.log(`[Segmentation] Transcript has ${transcript.rawSegments.length} raw segments`);
     
-    if (LLM_PROVIDER === 'ollama') {
-      console.log(`[Segmentation] Using Ollama model: ${OLLAMA_MODEL}`);
+    if (provider === 'ollama') {
+      console.log(`[Segmentation] Using Ollama model: ${model}`);
     }
 
     // Prepare the transcript data with timestamps
@@ -271,7 +279,7 @@ ${JSON.stringify(transcriptData, null, 2)}`;
 
     let responseText;
     
-    if (LLM_PROVIDER === 'claude') {
+    if (provider === 'claude') {
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
@@ -287,12 +295,12 @@ ${JSON.stringify(transcriptData, null, 2)}`;
 
       console.log('[Segmentation] Received response from Claude');
       responseText = message.content[0].text.trim();
-    } else if (LLM_PROVIDER === 'ollama') {
+    } else if (provider === 'ollama') {
       console.log('[Segmentation] Sending request to Ollama...');
-      responseText = await callOllama(userPrompt, SYSTEM_PROMPT);
+      responseText = await callOllamaWithModel(userPrompt, SYSTEM_PROMPT, model);
       console.log('[Segmentation] Received response from Ollama');
     } else {
-      throw new Error(`Unsupported LLM provider: ${LLM_PROVIDER}`);
+      throw new Error(`Unsupported LLM provider: ${provider}`);
     }
 
     // Parse the response - LLM should return only JSON
@@ -307,7 +315,7 @@ ${JSON.stringify(transcriptData, null, 2)}`;
       // Try to extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error(`${LLM_PROVIDER} did not return valid JSON. Response: ` + responseText.substring(0, 200));
+        throw new Error(`${provider} did not return valid JSON. Response: ` + responseText.substring(0, 200));
       }
       
       result = JSON.parse(jsonMatch[0]);

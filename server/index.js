@@ -160,6 +160,27 @@ function getGoogleDriveDirectUrl(fileId) {
 }
 
 // API Routes
+
+// Get available Ollama models
+app.get('/api/ollama/models', async (req, res) => {
+  try {
+    const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const response = await fetch(`${ollamaUrl}/api/tags`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to connect to Ollama');
+    }
+    
+    const data = await response.json();
+    const models = data.models.map(model => model.name);
+    
+    res.json({ models });
+  } catch (error) {
+    console.error('Error fetching Ollama models:', error);
+    res.status(500).json({ error: 'Failed to fetch Ollama models. Make sure Ollama is running.' });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   const health = {
     status: 'ok',
@@ -323,6 +344,7 @@ app.put('/api/videos/:id', async (req, res) => {
 app.post('/api/videos/:id/transcribe', async (req, res) => {
   try {
     const { id } = req.params;
+    const { llmProvider, ollamaModel } = req.body;
     const video = await readVideoData(id);
     
     if (!video) {
@@ -336,7 +358,7 @@ app.post('/api/videos/:id/transcribe', async (req, res) => {
     // Get transcript
     console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
     try {
-      const transcript = await getTranscript(video.url, video.videoType, id);
+      const transcript = await getTranscript(video.url, video.videoType, id, { llmProvider, ollamaModel });
       console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
       // Update video with transcript
@@ -374,6 +396,7 @@ app.post('/api/videos/:id/transcribe', async (req, res) => {
 app.post('/api/videos/:id/segment', async (req, res) => {
   try {
     const { id } = req.params;
+    const { llmProvider, ollamaModel } = req.body;
     const video = await readVideoData(id);
     
     if (!video) {
@@ -394,7 +417,7 @@ app.post('/api/videos/:id/segment', async (req, res) => {
       fullText: video.transcript,
       rawSegments: video.rawTranscript
     };
-    const segments = await segmentTranscript(transcript, video.url);
+    const segments = await segmentTranscript(transcript, video.url, { llmProvider, ollamaModel });
     
     // Update video with segments
     video.segments = segments;
@@ -426,6 +449,7 @@ app.post('/api/videos/:id/segment', async (req, res) => {
 app.post('/api/videos/:id/process', async (req, res) => {
   try {
     const { id } = req.params;
+    const { llmProvider, ollamaModel } = req.body;
     const video = await readVideoData(id);
     
     if (!video) {
@@ -438,7 +462,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     
     // Get transcript
     console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
-    const transcript = await getTranscript(video.url, video.videoType, id);
+    const transcript = await getTranscript(video.url, video.videoType, id, { llmProvider, ollamaModel });
     console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
     // Update video with transcript
@@ -450,7 +474,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     
     // Segment the transcript
     console.log(`Segmenting transcript for video ${id}...`);
-    const segments = await segmentTranscript(transcript, video.url);
+    const segments = await segmentTranscript(transcript, video.url, { llmProvider, ollamaModel });
     
     // Update video with segments
     video.segments = segments;

@@ -1,16 +1,49 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useVideoStore } from '../hooks/useVideoStore'
+import { api } from '../services/api'
 
 const VideoList = () => {
   const [inputUrl, setInputUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url')
+  const [llmProvider, setLlmProvider] = useState<'claude' | 'ollama'>('ollama')
+  const [ollamaModel, setOllamaModel] = useState('llama3.2:latest')
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [loadingModels, setLoadingModels] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { videos, addVideo, uploadVideo, loading, error } = useVideoStore()
 
+  // Fetch available Ollama models on component mount
+  useEffect(() => {
+    if (llmProvider === 'ollama') {
+      fetchOllamaModels()
+    }
+  }, [llmProvider])
+
+  const fetchOllamaModels = async () => {
+    setLoadingModels(true)
+    try {
+      const models = await api.getOllamaModels()
+      setAvailableModels(models)
+      // If current model is not in the list, select the first one
+      if (models.length > 0 && !models.includes(ollamaModel)) {
+        setOllamaModel(models[0])
+      }
+    } catch (error) {
+      console.error('Failed to fetch Ollama models:', error)
+      setAvailableModels([])
+    } finally {
+      setLoadingModels(false)
+    }
+  }
+
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Set the LLM configuration before processing
+    api.setLLMConfig(llmProvider, ollamaModel)
+    
     if (uploadMode === 'url' && inputUrl.trim()) {
       try {
         await addVideo(inputUrl.trim())
@@ -47,6 +80,58 @@ const VideoList = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Video Transcription Manager</h1>
+      
+      {/* LLM Provider Selection */}
+      <div className="mb-6 p-4 border border-gray-600 bg-gray-900">
+        <h2 className="text-lg font-semibold mb-4">AI Model Configuration</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">LLM Provider</label>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setLlmProvider('claude')}
+                className={`px-4 py-2 border ${llmProvider === 'claude' ? 'bg-white text-black' : 'border-white text-white'} transition-colors`}
+              >
+                Claude (Anthropic)
+              </button>
+              <button
+                onClick={() => setLlmProvider('ollama')}
+                className={`px-4 py-2 border ${llmProvider === 'ollama' ? 'bg-white text-black' : 'border-white text-white'} transition-colors`}
+              >
+                Ollama (Local)
+              </button>
+            </div>
+          </div>
+          
+          {llmProvider === 'ollama' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Ollama Model</label>
+              {loadingModels ? (
+                <p className="text-gray-400">Loading available models...</p>
+              ) : availableModels.length > 0 ? (
+                <select
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  className="w-full px-4 py-2 bg-black border border-white text-white focus:outline-none focus:border-gray-400"
+                >
+                  {availableModels.map(model => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-red-400">No Ollama models found. Make sure Ollama is running.</p>
+              )}
+            </div>
+          )}
+          
+          {llmProvider === 'claude' && (
+            <div className="text-sm text-gray-400">
+              <p>Using Claude Sonnet 4 model</p>
+              <p>Make sure ANTHROPIC_API_KEY is set in your .env file</p>
+            </div>
+          )}
+        </div>
+      </div>
       
       <div className="mb-4">
         <div className="flex gap-4 mb-4">
