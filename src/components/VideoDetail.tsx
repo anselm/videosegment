@@ -168,7 +168,7 @@ const VideoDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <h2 className="text-xl font-semibold mb-4">Video</h2>
-          {videoId ? (
+          {video.videoType === 'youtube' && videoId ? (
             <div className="aspect-video">
               <iframe
                 width="100%"
@@ -181,9 +181,17 @@ const VideoDetail = () => {
                 className="border border-white"
               />
             </div>
+          ) : video.videoType !== 'youtube' ? (
+            <div className="aspect-video border border-white flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-gray-400 mb-2">Non-YouTube video</p>
+                <p className="text-sm text-gray-500">Type: {video.videoType}</p>
+                <p className="text-xs text-gray-600 mt-2">Video preview not available for external videos</p>
+              </div>
+            </div>
           ) : (
             <div className="aspect-video border border-white flex items-center justify-center">
-              <p className="text-gray-500">Invalid YouTube URL</p>
+              <p className="text-gray-500">Invalid video URL</p>
             </div>
           )}
           

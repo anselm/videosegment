@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { getTranscript, segmentTranscript } from './services/transcription.js';
+import { downloadVideo, extractAudio } from './services/videoProcessor.js';
 
 dotenv.config();
 
@@ -101,6 +102,31 @@ function isValidYouTubeUrl(url) {
   return patterns.some(pattern => pattern.test(url));
 }
 
+function getVideoType(url) {
+  if (isValidYouTubeUrl(url)) {
+    return 'youtube';
+  }
+  // Check for Google Drive
+  if (url.includes('drive.google.com')) {
+    return 'googledrive';
+  }
+  // Check for direct video file extensions
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+  if (videoExtensions.some(ext => url.toLowerCase().includes(ext))) {
+    return 'direct';
+  }
+  return 'unknown';
+}
+
+function extractGoogleDriveId(url) {
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+}
+
+function getGoogleDriveDirectUrl(fileId) {
+  return `https://drive.google.com/uc?export=download&id=${fileId}`;
+}
+
 // API Routes
 app.get('/api/health', async (req, res) => {
   const health = {
@@ -148,8 +174,9 @@ app.post('/api/videos', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
     
-    if (!isValidYouTubeUrl(url)) {
-      return res.status(400).json({ error: 'Invalid YouTube URL format' });
+    const videoType = getVideoType(url);
+    if (videoType === 'unknown') {
+      return res.status(400).json({ error: 'Invalid video URL format. Supported: YouTube, Google Drive, or direct video file URLs' });
     }
     
     // Generate unique ID
@@ -159,10 +186,13 @@ app.post('/api/videos', async (req, res) => {
     const video = {
       id,
       url,
+      videoType: getVideoType(url),
       title: extractVideoTitle(url),
       addedAt: new Date().toISOString(),
       transcript: null,
-      segments: []
+      segments: [],
+      localVideoPath: null,
+      audioPath: null
     };
     
     // Save to filesystem
@@ -238,7 +268,7 @@ app.post('/api/videos/:id/transcribe', async (req, res) => {
     // Get transcript
     console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
     try {
-      const transcript = await getTranscript(video.url);
+      const transcript = await getTranscript(video.url, video.videoType, id);
       console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
       // Update video with transcript
@@ -340,7 +370,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     
     // Get transcript
     console.log(`[Server] Fetching transcript for video ${id} (${video.url})...`);
-    const transcript = await getTranscript(video.url);
+    const transcript = await getTranscript(video.url, video.videoType, id);
     console.log(`[Server] Transcript fetched successfully: ${transcript.fullText.length} characters`);
     
     // Update video with transcript

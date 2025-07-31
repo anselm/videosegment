@@ -1,16 +1,19 @@
 export interface Video {
   id: string
   url: string
+  videoType?: 'youtube' | 'googledrive' | 'direct' | 'unknown'
   title: string
   addedAt: string // ISO date string from server
   transcript?: string | null
   segments?: VideoSegment[]
-  status?: 'pending' | 'processing' | 'transcribing' | 'transcribed' | 'segmenting' | 'completed' | 'error'
+  status?: 'pending' | 'processing' | 'transcribing' | 'transcribed' | 'segmenting' | 'completed' | 'error' | 'downloading'
   error?: string
   processedAt?: string
   transcribedAt?: string
   segmentedAt?: string
   rawTranscript?: any[]
+  localVideoPath?: string | null
+  audioPath?: string | null
 }
 
 export interface VideoSegment {

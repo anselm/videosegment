@@ -76,10 +76,14 @@ A React + Express application for managing YouTube video transcriptions and segm
 
 ## Features
 
-- Add YouTube videos by URL
-- View video list with thumbnails
-- Video detail page with embedded player
+- Add videos from multiple sources:
+  - YouTube videos (with automatic caption fetching)
+  - Google Drive videos
+  - Direct video file URLs
+- View video list with thumbnails (YouTube only)
+- Video detail page with embedded player (YouTube only)
 - Automatic YouTube transcript fetching
+- Video download and audio extraction for non-YouTube sources
 - AI-powered transcript segmentation using Claude
 - Server-side filesystem storage (JSON files)
 - Processing status tracking
@@ -103,6 +107,18 @@ NODE_ENV=development
 ANTHROPIC_API_KEY=your_claude_api_key_here
 FRONTEND_URL=http://localhost:5173
 ```
+
+## System Requirements
+
+For processing non-YouTube videos, you need:
+
+- **FFmpeg** installed on your system for audio extraction
+  - macOS: `brew install ffmpeg`
+  - Ubuntu/Debian: `sudo apt-get install ffmpeg`
+  - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+
+- **Whisper** (future requirement) for speech-to-text on non-YouTube videos
+  - Will be implemented as a Docker container or API service
 
 ## Future Enhancements
 

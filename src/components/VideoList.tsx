@@ -81,6 +81,9 @@ const VideoList = () => {
                       Added: {new Date(video.addedAt).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-500 truncate">{video.url}</p>
+                    {video.videoType && video.videoType !== 'youtube' && (
+                      <p className="text-xs text-gray-600">Type: {video.videoType}</p>
+                    )}
                     {video.status && (
                       <p className="text-sm text-gray-400 mt-1">
                         Status: <span className={

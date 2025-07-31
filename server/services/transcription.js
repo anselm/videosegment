@@ -1,6 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import { downloadVideo, extractAudio, transcribeAudio } from './videoProcessor.js';
 
 dotenv.config();
 
@@ -8,23 +9,56 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function getTranscript(videoUrl) {
+export async function getTranscript(videoUrl, videoType, videoId) {
   try {
-    console.log(`[Transcription] Processing URL: ${videoUrl}`);
+    console.log(`[Transcription] Processing URL: ${videoUrl}, Type: ${videoType}`);
     
-    // Extract video ID from URL
-    const videoId = extractVideoId(videoUrl);
-    if (!videoId) {
-      throw new Error(`Invalid YouTube URL: ${videoUrl}`);
+    if (videoType === 'youtube') {
+      // Extract video ID from URL
+      const youtubeId = extractVideoId(videoUrl);
+      if (!youtubeId) {
+        throw new Error(`Invalid YouTube URL: ${videoUrl}`);
+      }
+      
+      console.log(`[Transcription] Extracted YouTube video ID: ${youtubeId}`);
+      return await getYouTubeTranscript(youtubeId);
+    } else {
+      // Handle non-YouTube videos
+      console.log(`[Transcription] Processing non-YouTube video: ${videoType}`);
+      return await getVideoFileTranscript(videoUrl, videoType, videoId);
     }
+  } catch (error) {
+    console.error('Error fetching YouTube transcript:', error);
+    throw error;
+  }
+}
+
+async function getVideoFileTranscript(videoUrl, videoType, videoId) {
+  try {
+    // Download the video
+    const videoPath = await downloadVideo(videoUrl, videoId, videoType);
     
-    console.log(`[Transcription] Extracted video ID: ${videoId}`);
+    // Extract audio from video
+    const audioPath = await extractAudio(videoPath, videoId);
+    
+    // Transcribe audio
+    const transcript = await transcribeAudio(audioPath, videoId);
+    
+    return transcript;
+  } catch (error) {
+    console.error('Error processing video file:', error);
+    throw new Error(`Failed to process video file: ${error.message}`);
+  }
+}
+
+async function getYouTubeTranscript(youtubeId) {
+  try {
 
     // Fetch transcript
     let transcript;
     try {
-      console.log(`[Transcription] Attempting to fetch transcript for video ID: ${videoId}`);
-      transcript = await YoutubeTranscript.fetchTranscript(videoId);
+      console.log(`[Transcription] Attempting to fetch transcript for YouTube video ID: ${youtubeId}`);
+      transcript = await YoutubeTranscript.fetchTranscript(youtubeId);
       console.log(`[Transcription] Raw transcript response:`, transcript ? `${transcript.length} segments` : 'null/undefined');
       
       // Log first few segments for debugging
@@ -47,7 +81,7 @@ export async function getTranscript(videoUrl) {
     
     // Validate transcript data
     if (!transcript || transcript.length === 0) {
-      console.warn(`[Transcription] Empty transcript received for video ID: ${videoId}`);
+      console.warn(`[Transcription] Empty transcript received for YouTube video ID: ${youtubeId}`);
       throw new Error('No captions available for this video. The video must have captions/subtitles enabled for transcription to work.');
     }
 
