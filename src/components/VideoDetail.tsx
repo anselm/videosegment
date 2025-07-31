@@ -186,12 +186,23 @@ const VideoDetail = () => {
                 className="border border-white"
               />
             </div>
+          ) : video.localVideoPath ? (
+            <div className="aspect-video">
+              <video
+                controls
+                className="w-full h-full border border-white bg-black"
+                preload="metadata"
+              >
+                <source src={`/api/videos/${video.id}/file`} />
+                Your browser does not support the video tag.
+              </video>
+            </div>
           ) : video.videoType !== 'youtube' ? (
             <div className="aspect-video border border-white flex items-center justify-center">
               <div className="text-center">
-                <p className="text-gray-400 mb-2">Non-YouTube video</p>
+                <p className="text-gray-400 mb-2">Video not yet downloaded</p>
                 <p className="text-sm text-gray-500">Type: {video.videoType}</p>
-                <p className="text-xs text-gray-600 mt-2">Video preview not available for external videos</p>
+                <p className="text-xs text-gray-600 mt-2">Video will be available after transcription</p>
               </div>
             </div>
           ) : (
@@ -203,6 +214,19 @@ const VideoDetail = () => {
           <div className="mt-4 p-4 border border-white">
             <p className="text-sm text-gray-400">URL:</p>
             <p className="text-sm break-all">{video.url}</p>
+            {video.localVideoPath && (
+              <>
+                <p className="text-sm text-gray-400 mt-2">Local file:</p>
+                <p className="text-sm break-all">{video.localVideoPath.replace('file://', '')}</p>
+                <a 
+                  href={`/api/videos/${video.id}/file`} 
+                  download={video.originalFilename || `video-${video.id}.mp4`}
+                  className="inline-block mt-2 text-sm text-blue-400 hover:text-blue-300 underline"
+                >
+                  Download video file
+                </a>
+              </>
+            )}
           </div>
         </div>
         

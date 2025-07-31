@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import multer from 'multer';
+import { createReadStream } from 'fs';
 import { getTranscript, segmentTranscript } from './services/transcription.js';
 import { downloadVideo } from './services/videoProcessor.js';
 
@@ -475,6 +476,74 @@ app.post('/api/videos/:id/process', async (req, res) => {
     }
     
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Serve video files
+app.get('/api/videos/:id/file', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    if (!video.localVideoPath) {
+      return res.status(404).json({ error: 'Video file not available' });
+    }
+    
+    const videoPath = video.localVideoPath.replace('file://', '');
+    
+    // Check if file exists
+    try {
+      await fs.access(videoPath);
+    } catch (error) {
+      return res.status(404).json({ error: 'Video file not found on server' });
+    }
+    
+    // Get file stats for content-length
+    const stat = await fs.stat(videoPath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+    
+    // Determine content type from file extension
+    const ext = path.extname(videoPath).toLowerCase();
+    const contentType = {
+      '.mp4': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.avi': 'video/x-msvideo',
+      '.webm': 'video/webm',
+      '.mkv': 'video/x-matroska',
+      '.ogg': 'video/ogg'
+    }[ext] || 'video/mp4';
+    
+    if (range) {
+      // Support for video seeking
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+      const file = createReadStream(videoPath, { start, end });
+      const head = {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': contentType,
+      };
+      res.writeHead(206, head);
+      file.pipe(res);
+    } else {
+      const head = {
+        'Content-Length': fileSize,
+        'Content-Type': contentType,
+      };
+      res.writeHead(200, head);
+      createReadStream(videoPath).pipe(res);
+    }
+  } catch (error) {
+    console.error('Error serving video file:', error);
+    res.status(500).json({ error: 'Failed to serve video file' });
   }
 });
 
