@@ -10,5 +10,10 @@ services:
       - WHISPER_MODEL=base
       - DEVICE=cpu
       - COMPUTE_TYPE=float32
+    volumes:
+      - whisperx-cache:/root/.cache
     restart: unless-stopped
+
+volumes:
+  whisperx-cache:
 
