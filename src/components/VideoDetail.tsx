@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useVideoStore } from '../hooks/useVideoStore'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Video } from '../types/Video'
 import { api } from '../services/api'
 
