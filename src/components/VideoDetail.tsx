@@ -133,7 +133,7 @@ const VideoDetail = () => {
               {processing || video.status === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
             </button>
           )}
-          {video.transcript && !video.segments && (
+          {video.transcript && (!video.segments || video.segments.length === 0) && (
             <button
               onClick={handleSegment}
               disabled={processing || video.status === 'segmenting'}
