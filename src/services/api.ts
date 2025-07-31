@@ -1,6 +1,28 @@
 // When served from Express, use relative URLs
 // This works for both development (with Vite proxy) and production
 export const api = {
+  async uploadVideo(file: File, title?: string) {
+    const formData = new FormData();
+    formData.append('video', file);
+    if (title) {
+      formData.append('title', title);
+    }
+
+    const response = await fetch('/api/videos/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload video');
+      } catch {
+        throw new Error('Failed to upload video');
+      }
+    }
+    return response.json();
+  },
   async getVideos() {
     const response = await fetch('/api/videos');
     if (!response.ok) throw new Error('Failed to fetch videos');

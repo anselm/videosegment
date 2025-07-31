@@ -42,6 +42,22 @@ export const useVideoStore = () => {
     }
   }
 
+  const uploadVideo = async (file: File, title?: string) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const newVideo = await api.uploadVideo(file, title)
+      setVideos([newVideo, ...videos])
+      return newVideo
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload video')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getVideo = useCallback((id: string) => {
     return videos.find(v => v.id === id)
   }, [videos])
@@ -123,7 +139,8 @@ export const useVideoStore = () => {
 
   return { 
     videos, 
-    addVideo, 
+    addVideo,
+    uploadVideo, 
     getVideo, 
     fetchVideo,
     updateVideo,
