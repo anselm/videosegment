@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   whisperx:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.whisperx
     container_name: whisperx-api
     ports:
       - "9010:9000"
@@ -14,6 +16,20 @@ services:
       - whisperx-cache:/root/.cache
     restart: unless-stopped
 
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: ollama-api
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
 volumes:
   whisperx-cache:
+  ollama-data:
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Setting up WhisperX Docker container..."
+echo "Setting up Docker containers..."
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -14,29 +14,40 @@ if ! docker compose version &> /dev/null; then
     exit 1
 fi
 
-# Pull the WhisperX image
-echo "Pulling WhisperX Docker image..."
-docker pull ghcr.io/jim60105/whisperx:latest
-
 # Create necessary directories
 echo "Creating data directories..."
 mkdir -p ../data/videos/audio
 mkdir -p ../data/videos/transcripts
 mkdir -p ../data/videos/files
 
-# Start the container
-echo "Starting WhisperX container..."
-docker compose up -d
+# Build and start the containers
+echo "Building and starting containers..."
+docker compose up -d --build
 
-# Check if container is running
-if docker ps | grep -q whisperx-service; then
-    echo "✅ WhisperX container is running successfully!"
+# Wait for containers to be ready
+echo "Waiting for services to be ready..."
+sleep 10
+
+# Check if containers are running
+WHISPERX_RUNNING=$(docker ps | grep -q whisperx-api && echo "yes" || echo "no")
+OLLAMA_RUNNING=$(docker ps | grep -q ollama-api && echo "yes" || echo "no")
+
+if [ "$WHISPERX_RUNNING" = "yes" ] && [ "$OLLAMA_RUNNING" = "yes" ]; then
+    echo "✅ All containers are running successfully!"
     echo ""
-    echo "You can now transcribe non-YouTube videos."
-    echo "To check logs: npm run docker:whisper:logs"
-    echo "To stop: npm run docker:whisper:stop"
+    echo "Services available:"
+    echo "- WhisperX API: http://localhost:9010"
+    echo "- Ollama API: http://localhost:11434"
+    echo ""
+    echo "Ollama is pulling the llama3.1:8b model in the background."
+    echo "Check progress with: docker logs ollama-api"
+    echo ""
+    echo "To check all logs: docker compose logs"
+    echo "To stop: docker compose down"
 else
-    echo "❌ Failed to start WhisperX container"
+    echo "❌ Failed to start some containers"
+    [ "$WHISPERX_RUNNING" = "no" ] && echo "- WhisperX is not running"
+    [ "$OLLAMA_RUNNING" = "no" ] && echo "- Ollama is not running"
     echo "Check logs with: docker compose logs"
     exit 1
 fi
