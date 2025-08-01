@@ -4,7 +4,7 @@
 // Store LLM configuration in memory
 let llmConfig = {
   provider: 'ollama' as 'claude' | 'ollama',
-  ollamaModel: 'llama3.2:latest'
+  ollamaModel: ''
 }
 
 export const api = {

@@ -8,7 +8,7 @@ const VideoList = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url')
   const [llmProvider, setLlmProvider] = useState<'claude' | 'ollama'>('ollama')
-  const [ollamaModel, setOllamaModel] = useState('llama3.2:latest')
+  const [ollamaModel, setOllamaModel] = useState('')
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -26,9 +26,10 @@ const VideoList = () => {
     try {
       const models = await api.getOllamaModels()
       setAvailableModels(models)
-      // If current model is not in the list, select the first one
-      if (models.length > 0 && !models.includes(ollamaModel)) {
+      // If no model is selected yet, select the first one
+      if (models.length > 0 && !ollamaModel) {
         setOllamaModel(models[0])
+        api.setLLMConfig(llmProvider, models[0])
       }
     } catch (error) {
       console.error('Failed to fetch Ollama models:', error)
@@ -89,13 +90,19 @@ const VideoList = () => {
             <label className="block text-sm font-medium mb-2">LLM Provider</label>
             <div className="flex gap-4">
               <button
-                onClick={() => setLlmProvider('claude')}
+                onClick={() => {
+                  setLlmProvider('claude')
+                  api.setLLMConfig('claude')
+                }}
                 className={`px-4 py-2 border ${llmProvider === 'claude' ? 'bg-white text-black' : 'border-white text-white'} transition-colors`}
               >
                 Claude (Anthropic)
               </button>
               <button
-                onClick={() => setLlmProvider('ollama')}
+                onClick={() => {
+                  setLlmProvider('ollama')
+                  api.setLLMConfig('ollama', ollamaModel)
+                }}
                 className={`px-4 py-2 border ${llmProvider === 'ollama' ? 'bg-white text-black' : 'border-white text-white'} transition-colors`}
               >
                 Ollama (Local)
@@ -111,7 +118,10 @@ const VideoList = () => {
               ) : availableModels.length > 0 ? (
                 <select
                   value={ollamaModel}
-                  onChange={(e) => setOllamaModel(e.target.value)}
+                  onChange={(e) => {
+                    setOllamaModel(e.target.value)
+                    api.setLLMConfig(llmProvider, e.target.value)
+                  }}
                   className="w-full px-4 py-2 bg-black border border-white text-white focus:outline-none focus:border-gray-400"
                 >
                   {availableModels.map(model => (
