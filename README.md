@@ -19,8 +19,8 @@ The easiest way to run the application is using the combined build and serve com
 # Install dependencies
 npm install
 
-# Start WhisperX Docker container (required for video transcription)
-npm run docker:whisper:start
+# Start Docker containers (WhisperX and Ollama)
+npm run docker:start
 
 # Build the React app and start the server
 npm run build:serve
@@ -35,15 +35,17 @@ This will:
 
 **Note:** The frontend and backend are integrated - the Express server serves the React app. You don't need to run them separately in production mode.
 
-**Important:** WhisperX is required for transcribing uploaded videos and non-YouTube content. YouTube videos with captions don't require WhisperX.
+**Important:** 
+- WhisperX is required for transcribing uploaded videos and non-YouTube content. YouTube videos with captions don't require WhisperX.
+- Ollama with llama3.1:8b model is used for AI-powered video segmentation. The model will be automatically downloaded on first run (about 4.7GB).
 
 ### Development Mode
 
 For active development with hot reloading:
 
 ```bash
-# Start WhisperX if you plan to transcribe videos
-npm run docker:whisper:start
+# Start Docker services (WhisperX and Ollama)
+npm run docker:start
 
 # Start development servers
 npm run dev
@@ -53,7 +55,8 @@ This starts:
 - Frontend dev server with hot reload on http://localhost:5173
 - Backend API server on http://localhost:3001
 - Automatic proxying between them
-- WhisperX service on port 9010 (if started)
+- WhisperX service on port 9010 (for transcription)
+- Ollama service on port 11434 (for AI segmentation)
 
 ### Production Deployment
 
@@ -112,7 +115,8 @@ npm run build:serve
   - Direct MOV file support without preprocessing
   
 - **AI-Powered Segmentation**:
-  - Smart segmentation using Claude AI
+  - Smart segmentation using Claude AI or local Ollama (llama3.1:8b)
+  - Choose between cloud (Claude) or local (Ollama) LLM providers
   - Signal phrase detection:
     - **Step markers**: "Next step", "New Step", "Moving on", etc.
     - **Key points**: "Key Point", "This is important", "Remember", etc.
@@ -141,54 +145,83 @@ Create a `.env` file in the root directory with:
 ```
 PORT=3001
 NODE_ENV=development
-ANTHROPIC_API_KEY=your_claude_api_key_here
+ANTHROPIC_API_KEY=your_claude_api_key_here  # Optional if using Ollama
 FRONTEND_URL=http://localhost:5173
+LLM_PROVIDER=ollama  # or 'claude'
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1:8b
 ```
 
 ## System Requirements
 
 - **Node.js** 16+ and npm
-- **Docker** and **Docker Compose** for WhisperX transcription service
+- **Docker** and **Docker Compose** for WhisperX and Ollama services
   - [Install Docker](https://docs.docker.com/get-docker/)
   - Docker Compose is included with Docker Desktop
 - **WhisperX** Docker container for transcribing uploaded videos and non-YouTube content
-  - Automatically pulled when you run `npm run docker:whisper:start`
+- **Ollama** Docker container with llama3.1:8b model for AI segmentation
+  - Both services are automatically set up when you run `npm run docker:start`
 
 Note: FFmpeg is no longer required as WhisperX handles video processing internally.
 
-## WhisperX Setup
-
-WhisperX is used for transcribing uploaded videos and non-YouTube content. YouTube videos with captions are transcribed using the YouTube API and don't require WhisperX.
+## Docker Services Setup
 
 ### Quick Start
 
-1. Start WhisperX container:
+1. Start all Docker services (WhisperX and Ollama):
    ```bash
-   npm run docker:whisper:start
+   npm run docker:start
    ```
 
-2. Check if it's running:
+2. Check if services are running:
    ```bash
-   docker ps | grep whisperx-api
+   docker ps
    ```
 
 3. View logs:
    ```bash
+   # All services
+   npm run docker:logs
+   
+   # Individual services
    npm run docker:whisper:logs
+   npm run docker:ollama:logs
    ```
 
-4. Stop when done:
+4. Stop services:
    ```bash
-   npm run docker:whisper:stop
+   npm run docker:stop
    ```
+
+### Services
+
+#### WhisperX
+- Used for transcribing uploaded videos and non-YouTube content
+- YouTube videos with captions are transcribed using the YouTube API and don't require WhisperX
+- Available at http://localhost:9010
+- Uses the `base` model (can be changed in `docker/docker-compose.yml`)
+- Runs on CPU by default (change to `cuda` for GPU support)
+
+#### Ollama
+- Provides local AI for video segmentation
+- Automatically downloads and runs llama3.1:8b model (4.7GB)
+- Available at http://localhost:11434
+- Alternative to Claude AI for offline/private processing
 
 ### Troubleshooting
 
-If WhisperX fails to start:
+If services fail to start:
 - Ensure Docker is running: `docker info`
-- Check port 9010 is available: `lsof -i :9010` (macOS/Linux)
+- Check ports are available: 
+  - WhisperX: `lsof -i :9010` (macOS/Linux)
+  - Ollama: `lsof -i :11434` (macOS/Linux)
+- Check logs: `npm run docker:logs`
 - Restart Docker and try again
-- Check logs: `npm run docker:whisper:logs`
+
+If Ollama is not responding:
+- The model download might still be in progress
+- Check download status: `npm run docker:ollama:logs`
+- Wait for "Pulling llama3.1:8b model... success" message
 
 ### Manual Setup
 
@@ -199,14 +232,6 @@ cd docker
 chmod +x setup.sh
 ./setup.sh
 ```
-
-### WhisperX Configuration
-
-The WhisperX container is configured to:
-- Use the `base` model (can be changed in `docker/docker-compose.yml`)
-- Run on CPU by default (change to `cuda` for GPU support)
-- Process audio files from `data/videos/audio/`
-- Save transcripts to `data/videos/transcripts/`
 
 ## Future Enhancements
 
