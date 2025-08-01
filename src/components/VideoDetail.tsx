@@ -125,22 +125,20 @@ const VideoDetail = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{video.title}</h1>
         <div className="flex gap-2">
-          {!video.transcript && (
-            <button
-              onClick={handleTranscribe}
-              disabled={processing || video.status === 'transcribing'}
-              className="px-4 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {processing || video.status === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
-            </button>
-          )}
-          {video.transcript && (!video.segments || video.segments.length === 0) && (
+          <button
+            onClick={handleTranscribe}
+            disabled={processing || video.status === 'transcribing'}
+            className="px-4 py-2 bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {processing || video.status === 'transcribing' ? 'Transcribing...' : video.transcript ? 'Re-transcribe' : 'Transcribe'}
+          </button>
+          {video.transcript && (
             <button
               onClick={handleSegment}
               disabled={processing || video.status === 'segmenting'}
               className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing || video.status === 'segmenting' ? 'Segmenting...' : 'Segment'}
+              {processing || video.status === 'segmenting' ? 'Segmenting...' : video.segments && video.segments.length > 0 ? 'Re-segment' : 'Segment'}
             </button>
           )}
           {!video.transcript && (
