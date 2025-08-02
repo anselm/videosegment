@@ -10,6 +10,7 @@ import multer from 'multer';
 import { createReadStream } from 'fs';
 import { getTranscript, segmentTranscript } from './services/transcription.js';
 import { downloadVideo } from './services/videoProcessor.js';
+import { generateFilmstrip, getVideoMetadata } from './services/filmstrip.js';
 
 dotenv.config();
 
@@ -28,12 +29,14 @@ if (!process.env.ANTHROPIC_API_KEY) {
 // Data directory for storing video files
 const DATA_DIR = join(__dirname, '../data/videos');
 const UPLOAD_DIR = join(__dirname, '../data/videos/uploads');
+const FILMSTRIP_DIR = join(__dirname, '../data/videos/filmstrips');
 
 // Ensure data directories exist
 async function ensureDataDirs() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    await fs.mkdir(FILMSTRIP_DIR, { recursive: true });
   } catch (error) {
     console.error('Error creating data directories:', error);
   }
@@ -502,6 +505,105 @@ app.post('/api/videos/:id/process', async (req, res) => {
     }
     
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate filmstrip for video
+app.post('/api/videos/:id/filmstrip', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { frameCount = 100 } = req.body;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    if (!video.localVideoPath) {
+      return res.status(400).json({ error: 'Video file not available for filmstrip generation' });
+    }
+    
+    console.log(`[Server] Generating filmstrip for video ${id}...`);
+    const filmstrip = await generateFilmstrip(video.localVideoPath, id, frameCount);
+    
+    // Update video with filmstrip data
+    video.filmstrip = filmstrip;
+    await writeVideoData(id, video);
+    
+    res.json({ filmstrip });
+  } catch (error) {
+    console.error('Error generating filmstrip:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate filmstrip' });
+  }
+});
+
+// Get video metadata (duration, dimensions, etc.)
+app.get('/api/videos/:id/metadata', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    if (!video.localVideoPath) {
+      return res.status(400).json({ error: 'Video file not available' });
+    }
+    
+    const metadata = await getVideoMetadata(video.localVideoPath);
+    
+    // Update video with duration
+    video.duration = metadata.duration;
+    await writeVideoData(id, video);
+    
+    res.json(metadata);
+  } catch (error) {
+    console.error('Error getting video metadata:', error);
+    res.status(500).json({ error: error.message || 'Failed to get video metadata' });
+  }
+});
+
+// Update video segments
+app.put('/api/videos/:id/segments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { segments } = req.body;
+    
+    const video = await readVideoData(id);
+    
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    // Update segments
+    video.segments = segments;
+    await writeVideoData(id, video);
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Error updating segments:', error);
+    res.status(500).json({ error: 'Failed to update segments' });
+  }
+});
+
+// Serve filmstrip frames
+app.get('/api/videos/:id/filmstrip/:frameIndex', async (req, res) => {
+  try {
+    const { id, frameIndex } = req.params;
+    const framePath = join(FILMSTRIP_DIR, id, `frame_${frameIndex}.jpg`);
+    
+    // Check if file exists
+    try {
+      await fs.access(framePath);
+    } catch (error) {
+      return res.status(404).json({ error: 'Frame not found' });
+    }
+    
+    res.sendFile(framePath);
+  } catch (error) {
+    console.error('Error serving filmstrip frame:', error);
+    res.status(500).json({ error: 'Failed to serve frame' });
   }
 });
 

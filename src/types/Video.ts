@@ -17,6 +17,8 @@ export interface Video {
   originalFilename?: string
   fileSize?: number
   mimeType?: string
+  duration?: number // Video duration in seconds
+  filmstrip?: FilmstripFrame[]
 }
 
 export interface VideoSegment {
@@ -34,4 +36,11 @@ export interface VideoSegment {
     text: string
     timestamp: number
   }>
+}
+
+export interface FilmstripFrame {
+  timestamp: number
+  url: string
+  width: number
+  height: number
 }

@@ -147,4 +147,43 @@ export const api = {
     }
     return response.json();
   },
+
+  async generateFilmstrip(id: string, frameCount: number = 100) {
+    const response = await fetch(`/api/videos/${id}/filmstrip`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ frameCount }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate filmstrip');
+    }
+    return response.json();
+  },
+
+  async updateSegments(id: string, segments: any[]) {
+    const response = await fetch(`/api/videos/${id}/segments`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ segments }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update segments');
+    }
+    return response.json();
+  },
+
+  async getVideoMetadata(id: string) {
+    const response = await fetch(`/api/videos/${id}/metadata`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get video metadata');
+    }
+    return response.json();
+  },
 };
