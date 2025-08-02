@@ -11,19 +11,6 @@ interface TimelineProps {
 export default function Timeline({ duration, currentTime, filmstrip, onSeek }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [timelineWidth, setTimelineWidth] = useState(0)
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (timelineRef.current) {
-        setTimelineWidth(timelineRef.current.offsetWidth)
-      }
-    }
-    
-    updateWidth()
-    window.addEventListener('resize', updateWidth)
-    return () => window.removeEventListener('resize', updateWidth)
-  }, [])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
