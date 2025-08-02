@@ -276,12 +276,20 @@ const VideoDetail = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Segments</h2>
           {video.segments && video.segments.length > 0 && (
-            <button
-              onClick={() => setShowJson(!showJson)}
-              className="px-4 py-2 bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 transition-colors text-sm"
-            >
-              {showJson ? 'Show Visual' : 'Show JSON'}
-            </button>
+            <div className="flex gap-2">
+              <Link
+                to={`/video/${id}/edit`}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm"
+              >
+                Edit Timeline
+              </Link>
+              <button
+                onClick={() => setShowJson(!showJson)}
+                className="px-4 py-2 bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 transition-colors text-sm"
+              >
+                {showJson ? 'Show Visual' : 'Show JSON'}
+              </button>
+            </div>
           )}
         </div>
         <div className="border border-white p-4">
