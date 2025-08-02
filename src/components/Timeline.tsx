@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { FilmstripFrame } from '../types/Video'
 
 interface TimelineProps {
