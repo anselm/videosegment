@@ -31,13 +31,15 @@ sleep 10
 # Check if containers are running
 WHISPERX_RUNNING=$(docker ps | grep -q whisperx-api && echo "yes" || echo "no")
 OLLAMA_RUNNING=$(docker ps | grep -q ollama-api && echo "yes" || echo "no")
+MONGODB_RUNNING=$(docker ps | grep -q mongodb-atlas-local && echo "yes" || echo "no")
 
-if [ "$WHISPERX_RUNNING" = "yes" ] && [ "$OLLAMA_RUNNING" = "yes" ]; then
+if [ "$WHISPERX_RUNNING" = "yes" ] && [ "$OLLAMA_RUNNING" = "yes" ] && [ "$MONGODB_RUNNING" = "yes" ]; then
     echo "✅ All containers are running successfully!"
     echo ""
     echo "Services available:"
     echo "- WhisperX API: http://localhost:9010"
     echo "- Ollama API: http://localhost:11434"
+    echo "- MongoDB Atlas Local: mongodb://admin:admin123@localhost:27017"
     echo ""
     echo "Ollama is pulling the llama3.1:8b model in the background."
     echo "Check progress with: docker logs ollama-api"
@@ -48,6 +50,7 @@ else
     echo "❌ Failed to start some containers"
     [ "$WHISPERX_RUNNING" = "no" ] && echo "- WhisperX is not running"
     [ "$OLLAMA_RUNNING" = "no" ] && echo "- Ollama is not running"
+    [ "$MONGODB_RUNNING" = "no" ] && echo "- MongoDB is not running"
     echo "Check logs with: docker compose logs"
     exit 1
 fi

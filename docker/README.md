@@ -1,6 +1,6 @@
 # Docker Services Setup
 
-This directory contains the Docker configuration for running WhisperX and Ollama services.
+This directory contains the Docker configuration for running WhisperX, Ollama, and MongoDB Atlas Local services.
 
 ## Services
 
@@ -9,6 +9,9 @@ Used for transcribing non-YouTube videos with OpenAI's Whisper model.
 
 ### Ollama
 Local LLM service with llama3.1:8b model for video segmentation and analysis.
+
+### MongoDB Atlas Local
+MongoDB with Atlas Search capabilities including vector embeddings support for semantic search.
 
 ## Prerequisites
 
@@ -53,6 +56,12 @@ docker compose down
 - Available at http://localhost:11434
 - Data persisted in ollama-data volume
 
+### MongoDB Atlas Local
+- Available at mongodb://localhost:27017
+- Default credentials: admin/admin123
+- Includes Atlas Search with vector embeddings support
+- Data persisted in mongodb-data volume
+
 ## Checking Status
 
 To check if services are running:
@@ -70,6 +79,7 @@ docker compose logs
 # Specific service
 docker logs whisperx-api
 docker logs ollama-api
+docker logs mongodb-atlas-local
 ```
 
 ## Troubleshooting
@@ -81,3 +91,13 @@ docker logs ollama-api
 ```
 
 The llama3.1:8b model is about 4.7GB and may take time to download on first run.
+
+If MongoDB is not starting, check the logs:
+
+```bash
+docker logs mongodb-atlas-local
+```
+
+To connect to MongoDB from your application:
+- Connection string: `mongodb://admin:admin123@localhost:27017`
+- For Atlas Search features, create indexes after connecting
