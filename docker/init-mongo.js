@@ -1,4 +1,9 @@
 // MongoDB initialization script for vector search setup
+// Authenticate as admin first
+db = db.getSiblingDB('admin');
+db.auth('admin', 'admin123');
+
+// Switch to videosegment database
 db = db.getSiblingDB('videosegment');
 
 // Create collections
