@@ -128,6 +128,12 @@ npm run build:serve
   - Embedded video player (YouTube)
   - Real-time processing status
   - File upload with drag-and-drop support
+  - **New Video Editor (Test UX)**: Interactive segment editing interface with:
+    - Visual timeline with filmstrip frames
+    - Drag-and-drop segment reordering
+    - Real-time segment editing (rename, adjust timing)
+    - Color-coded segment types (warnings in red, key points in yellow)
+    - Click-to-seek video playback synchronized with segments
   
 - **Technical Features**:
   - Server-side filesystem storage (JSON)
