@@ -12,9 +12,18 @@ services:
       - WHISPER_MODEL=base
       - DEVICE=cpu
       - COMPUTE_TYPE=float32
+      - TIMEOUT=3600  # 1 hour timeout for large videos
     volumes:
       - whisperx-cache:/root/.cache
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
 
   ollama:
     build:
