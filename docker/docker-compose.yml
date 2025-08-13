@@ -51,6 +51,7 @@ services:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
       - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    command: mongod --bind_ip_all --auth
     restart: unless-stopped
 
 volumes:
