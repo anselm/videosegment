@@ -14,7 +14,17 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ffmpeg' });
+  try {
+    res.status(200).json({ 
+      status: 'ok', 
+      service: 'ffmpeg',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({ status: 'error', error: error.message });
+  }
 });
 
 // Get video metadata
@@ -130,9 +140,20 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', (err) => {
+  if (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
   console.log(`FFmpeg service listening on port ${PORT}`);
   console.log('Health check available at /health');
+  console.log('Server started successfully');
+});
+
+// Handle server errors
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
