@@ -161,14 +161,18 @@ OLLAMA_MODEL=llama3.1:8b
 ## System Requirements
 
 - **Node.js** 16+ and npm
-- **Docker** and **Docker Compose** for WhisperX and Ollama services
+- **Docker** and **Docker Compose** for all services
   - [Install Docker](https://docs.docker.com/get-docker/)
   - Docker Compose is included with Docker Desktop
 - **WhisperX** Docker container for transcribing uploaded videos and non-YouTube content
+- **FFmpeg** Docker container for video processing and metadata extraction
 - **Ollama** Docker container with llama3.1:8b model for AI segmentation
-  - Both services are automatically set up when you run `npm run docker:start`
+- **MongoDB** Docker container for data storage
+  - All services are automatically set up when you run `npm run docker:start`
+- **PM2** (optional but recommended) for production process management
+  - Install with: `npm install -g pm2`
 
-Note: FFmpeg is no longer required as WhisperX handles video processing internally.
+Note: FFmpeg runs as a Docker service, no host installation required.
 
 ## Docker Services Setup
 
