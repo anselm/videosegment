@@ -171,6 +171,12 @@ export async function transcribeVideo(videoPath, videoId) {
     if (error.message.includes('ENOTFOUND')) {
       throw new Error('Cannot connect to WhisperX service. Please check the service URL and network connectivity.');
     }
+    if (error.message.includes('libctranslate2') || error.message.includes('executable stack')) {
+      throw new Error('WhisperX service has library compatibility issues. Try rebuilding the container with: docker-compose build --no-cache whisperx');
+    }
+    if (error.message.includes('500') && error.message.includes('Transcription failed')) {
+      throw new Error(`WhisperX transcription failed. This may be due to library compatibility issues. Try: 1) Rebuild container: docker-compose build --no-cache whisperx, 2) Check container logs: docker logs whisperx-api`);
+    }
     throw new Error(`Failed to transcribe video: ${error.message}`);
   }
 }

@@ -10,15 +10,20 @@ services:
     environment:
       - WHISPER_MODEL=base
       - DEVICE=cpu
-      - COMPUTE_TYPE=float32
+      - COMPUTE_TYPE=int8
       - TIMEOUT=3600  # 1 hour timeout for large videos
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=""
     volumes:
       - whisperx-cache:/root/.cache
     restart: unless-stopped
     security_opt:
       - seccomp:unconfined
+      - apparmor:unconfined
     cap_add:
       - SYS_PTRACE
+    privileged: false
+    user: root
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health"]
       interval: 30s
