@@ -7,6 +7,7 @@ import tempfile
 import subprocess
 import logging
 import traceback
+from subprocess import TimeoutExpired
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +17,16 @@ app = FastAPI()
 
 # Global model cache
 model_cache = {}
+
+@app.get("/")
+async def root():
+    return {
+        "service": "whisperx",
+        "status": "running",
+        "endpoints": ["/health", "/transcribe", "/asr"],
+        "model": os.environ.get("WHISPER_MODEL", "base"),
+        "device": os.environ.get("DEVICE", "cpu")
+    }
 
 def get_model():
     """Get or load the WhisperX model with caching"""
@@ -55,7 +66,7 @@ async def health_check():
             content={"status": "error", "service": "whisperx", "error": str(e)}
         )
 
-@app.post("/asr")
+@app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
     input_path = None
     wav_path = None
@@ -81,7 +92,7 @@ async def transcribe(file: UploadFile = File(...)):
             "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", wav_path
         ]
         
-        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, check=True, timeout=300)
         logger.info("FFmpeg conversion completed successfully")
         
         # Check if WAV file was created
@@ -124,6 +135,10 @@ async def transcribe(file: UploadFile = File(...)):
 
     except subprocess.CalledProcessError as e:
         error_msg = f"FFmpeg conversion failed: {e.stderr}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    except subprocess.TimeoutExpired as e:
+        error_msg = f"FFmpeg conversion timed out after 5 minutes"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
