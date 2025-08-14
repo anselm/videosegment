@@ -65,65 +65,105 @@ export async function transcribeVideo(videoPath, videoId) {
     const whisperxUrl = process.env.WHISPERX_API_URL || 'http://localhost:9010';
     console.log(`[VideoProcessor] Using WhisperX service at: ${whisperxUrl}`);
     
+    // First check if the service is healthy
+    try {
+      const healthResponse = await fetch(`${whisperxUrl}/health`, { timeout: 5000 });
+      if (!healthResponse.ok) {
+        console.warn(`[VideoProcessor] WhisperX health check failed: ${healthResponse.status}`);
+      } else {
+        const healthData = await healthResponse.json();
+        console.log(`[VideoProcessor] WhisperX service is healthy:`, healthData);
+      }
+    } catch (healthError) {
+      console.warn(`[VideoProcessor] WhisperX health check error:`, healthError.message);
+    }
+    
     // Read the video file
     const videoBuffer = await fs.readFile(videoPath);
+    console.log(`[VideoProcessor] Read video file: ${videoBuffer.length} bytes`);
     
     // Create form data using Node.js FormData
     const formData = new FormData();
     formData.append('file', videoBuffer, {
       filename: path.basename(videoPath),
-      contentType: 'video/mp4'
+      contentType: getContentType(videoPath)
     });
     
-    // Send to WhisperX API
+    // Send to WhisperX API with timeout
     console.log(`[VideoProcessor] Sending ${videoBuffer.length} bytes to WhisperX service`);
-    const response = await fetch(`${whisperxUrl}/asr`, {
-      method: 'POST',
-      body: formData,
-      headers: formData.getHeaders()
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
     
-    if (!response.ok) {
-      let errorText;
-      try {
-        errorText = await response.text();
-        console.error(`[VideoProcessor] WhisperX error response:`, errorText);
-      } catch (e) {
-        errorText = `Unable to read error response: ${e.message}`;
+    try {
+      const response = await fetch(`${whisperxUrl}/asr`, {
+        method: 'POST',
+        body: formData,
+        headers: formData.getHeaders(),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        let errorText;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorText = errorData.detail || errorData.error || JSON.stringify(errorData);
+          } else {
+            errorText = await response.text();
+          }
+          console.error(`[VideoProcessor] WhisperX error response:`, errorText);
+        } catch (e) {
+          errorText = `Unable to read error response: ${e.message}`;
+        }
+        throw new Error(`WhisperX API error: ${response.status} - ${errorText}`);
       }
-      throw new Error(`WhisperX API error: ${response.status} - ${errorText}`);
+      
+      const transcript = await response.json();
+      
+      // Log the response structure for debugging
+      console.log(`[VideoProcessor] WhisperX response structure:`, {
+        hasText: !!transcript.text,
+        textLength: transcript.text?.length || 0,
+        hasSegments: !!transcript.segments,
+        segmentCount: transcript.segments?.length || 0,
+        firstSegment: transcript.segments?.[0] || null
+      });
+      
+      // Convert WhisperX format to our format
+      const segments = transcript.segments || [];
+      const fullText = transcript.text || segments.map(seg => seg.text).join(' ').trim();
+      
+      if (!fullText || fullText.length === 0) {
+        throw new Error('WhisperX returned empty transcript');
+      }
+      
+      // Convert to our expected format with proper timestamps
+      const formattedTranscript = {
+        rawSegments: segments.map(seg => ({
+          text: seg.text || '',
+          start: seg.start || 0,
+          end: seg.end || 0,
+          duration: (seg.end || 0) - (seg.start || 0),
+          offset: (seg.start || 0) * 1000 // Convert to milliseconds
+        })),
+        fullText: fullText
+      };
+      
+      console.log(`[VideoProcessor] Transcription complete: ${fullText.length} characters, ${segments.length} segments with timestamps`);
+      
+      return formattedTranscript;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
     }
-    
-    const transcript = await response.json();
-    
-    // Log the response structure for debugging
-    console.log(`[VideoProcessor] WhisperX response structure:`, {
-      hasSegments: !!transcript.segments,
-      segmentCount: transcript.segments?.length || 0,
-      firstSegment: transcript.segments?.[0] || null
-    });
-    
-    // Convert WhisperX format to our format
-    const segments = transcript.segments || [];
-    const fullText = segments.map(seg => seg.text).join(' ').trim();
-    
-    // Convert to our expected format with proper timestamps
-    const formattedTranscript = {
-      rawSegments: segments.map(seg => ({
-        text: seg.text,
-        start: seg.start,
-        end: seg.end,
-        duration: seg.end - seg.start,
-        offset: seg.start * 1000 // Convert to milliseconds
-      })),
-      fullText: fullText
-    };
-    
-    console.log(`[VideoProcessor] Transcription complete: ${fullText.length} characters, ${segments.length} segments with timestamps`);
-    
-    return formattedTranscript;
   } catch (error) {
     console.error('[VideoProcessor] Error transcribing video:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('WhisperX transcription timed out after 5 minutes. The video may be too large or the service is overloaded.');
+    }
     if (error.message.includes('ECONNREFUSED')) {
       const whisperxUrl = process.env.WHISPERX_API_URL || 'http://localhost:9010';
       throw new Error(`WhisperX service is not running. Please ensure it is running at ${whisperxUrl}.`);
@@ -133,6 +173,19 @@ export async function transcribeVideo(videoPath, videoId) {
     }
     throw new Error(`Failed to transcribe video: ${error.message}`);
   }
+}
+
+function getContentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const contentTypes = {
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.avi': 'video/x-msvideo',
+    '.webm': 'video/webm',
+    '.mkv': 'video/x-matroska',
+    '.ogg': 'video/ogg'
+  };
+  return contentTypes[ext] || 'video/mp4';
 }
 
 function extractGoogleDriveId(url) {
