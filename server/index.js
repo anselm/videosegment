@@ -383,6 +383,7 @@ app.post('/api/videos/:id/transcribe', async (req, res) => {
     
     // Update video status to error
     try {
+      const { id } = req.params;
       const video = await readVideoData(id);
       if (video) {
         video.status = 'error';
@@ -436,6 +437,7 @@ app.post('/api/videos/:id/segment', async (req, res) => {
     
     // Update video status to error
     try {
+      const { id } = req.params;
       const video = await readVideoData(id);
       if (video) {
         video.status = 'error';
@@ -494,6 +496,7 @@ app.post('/api/videos/:id/process', async (req, res) => {
     
     // Update video status to error
     try {
+      const { id } = req.params;
       const video = await readVideoData(id);
       if (video) {
         video.status = 'error';
