@@ -43,6 +43,15 @@ else
     echo "  Start it with: npm run docker:whisper:start"
 fi
 
+# Check FFmpeg service
+echo -e "\n${YELLOW}Checking FFmpeg service...${NC}"
+if docker ps | grep -q ffmpeg-api; then
+    echo -e "${GREEN}✓ FFmpeg service is running on port 9020${NC}"
+else
+    echo -e "${YELLOW}! FFmpeg service is not running${NC}"
+    echo "  Start it with: npm run docker:start"
+fi
+
 # Check if server is built
 echo -e "\n${YELLOW}Checking build status...${NC}"
 if [ -d "dist" ]; then
