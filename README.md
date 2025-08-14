@@ -221,6 +221,12 @@ Note: FFmpeg is no longer required as WhisperX handles video processing internal
 - Database name: videosegment
 - Automatically initialized with required collections
 
+#### FFmpeg Service
+- Handles video processing, metadata extraction, and filmstrip generation
+- Available at http://localhost:9020
+- Runs entirely in Docker, no host installation needed
+- Processes videos sent via API for metadata and frame extraction
+
 ### Troubleshooting
 
 If services fail to start:

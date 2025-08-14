@@ -1,26 +1,18 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-
-const execAsync = promisify(exec);
+import fetch from 'node-fetch';
+import FormData from 'form-data';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const FILMSTRIP_DIR = join(__dirname, '../../data/videos/filmstrips');
+const FFMPEG_API_URL = process.env.FFMPEG_API_URL || 'http://localhost:9020';
 
 export async function generateFilmstrip(videoPath, videoId, frameCount = 100) {
   try {
-    // Check if ffmpeg is available
-    try {
-      await execAsync('ffmpeg -version');
-    } catch (error) {
-      throw new Error('FFmpeg is not installed. Please install FFmpeg on your system.');
-    }
-    
     // Clean up the video path if it has file:// prefix
     const cleanVideoPath = videoPath.replace('file://', '');
     
@@ -28,42 +20,50 @@ export async function generateFilmstrip(videoPath, videoId, frameCount = 100) {
     const videoFilmstripDir = join(FILMSTRIP_DIR, videoId);
     await fs.mkdir(videoFilmstripDir, { recursive: true });
     
-    // Get video duration first
-    const metadata = await getVideoMetadata(cleanVideoPath);
-    const duration = metadata.duration;
+    // Read video file
+    const videoBuffer = await fs.readFile(cleanVideoPath);
     
-    // Calculate interval between frames
-    const interval = duration / frameCount;
+    // Create form data
+    const formData = new FormData();
+    formData.append('video', videoBuffer, {
+      filename: 'video.mp4',
+      contentType: 'video/mp4'
+    });
+    formData.append('frameCount', frameCount.toString());
+    formData.append('videoId', videoId);
     
+    // Call FFmpeg service
+    console.log(`[Filmstrip] Generating ${frameCount} frames for video ${videoId} using FFmpeg service`);
+    
+    const response = await fetch(`${FFMPEG_API_URL}/filmstrip`, {
+      method: 'POST',
+      body: formData,
+      headers: formData.getHeaders()
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate filmstrip');
+    }
+    
+    const result = await response.json();
     const frames = [];
     
-    // Generate frames using ffmpeg
-    console.log(`[Filmstrip] Generating ${frameCount} frames for video ${videoId}`);
-    
-    for (let i = 0; i < frameCount; i++) {
-      const timestamp = i * interval;
-      const outputPath = join(videoFilmstripDir, `frame_${i}.jpg`);
+    // Save frames to disk
+    for (const frame of result.frames) {
+      const outputPath = join(videoFilmstripDir, `frame_${frame.index}.jpg`);
       
-      // Use ffmpeg to extract frame at specific timestamp
-      const command = `ffmpeg -ss ${timestamp} -i "${cleanVideoPath}" -vframes 1 -q:v 2 -y "${outputPath}"`;
+      // Extract base64 data and save to file
+      const base64Data = frame.data.replace(/^data:image\/jpeg;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      await fs.writeFile(outputPath, buffer);
       
-      try {
-        await execAsync(command);
-        
-        // Get frame dimensions
-        const dimensionsCommand = `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${outputPath}"`;
-        const { stdout } = await execAsync(dimensionsCommand);
-        const [width, height] = stdout.trim().split('x').map(Number);
-        
-        frames.push({
-          timestamp,
-          url: `/api/videos/${videoId}/filmstrip/${i}`,
-          width,
-          height
-        });
-      } catch (error) {
-        console.error(`[Filmstrip] Error generating frame ${i}:`, error.message);
-      }
+      frames.push({
+        timestamp: frame.timestamp,
+        url: `/api/videos/${videoId}/filmstrip/${frame.index}`,
+        width: 1920, // Default dimensions, could be extracted from metadata
+        height: 1080
+      });
     }
     
     console.log(`[Filmstrip] Generated ${frames.length} frames successfully`);
@@ -76,33 +76,33 @@ export async function generateFilmstrip(videoPath, videoId, frameCount = 100) {
 
 export async function getVideoMetadata(videoPath) {
   try {
-    // Check if ffprobe is available
-    try {
-      await execAsync('ffprobe -version');
-    } catch (error) {
-      throw new Error('FFprobe is not installed. Please install FFmpeg (which includes ffprobe) on your system.');
-    }
-    
     // Clean up the video path if it has file:// prefix
     const cleanVideoPath = videoPath.replace('file://', '');
     
-    // Use ffprobe to get video metadata
-    const command = `ffprobe -v quiet -print_format json -show_format -show_streams "${cleanVideoPath}"`;
-    const { stdout } = await execAsync(command);
-    const metadata = JSON.parse(stdout);
+    // Read video file
+    const videoBuffer = await fs.readFile(cleanVideoPath);
     
-    // Extract relevant information
-    const videoStream = metadata.streams.find(s => s.codec_type === 'video');
-    const duration = parseFloat(metadata.format.duration);
+    // Create form data
+    const formData = new FormData();
+    formData.append('video', videoBuffer, {
+      filename: 'video.mp4',
+      contentType: 'video/mp4'
+    });
     
-    return {
-      duration,
-      width: videoStream?.width || 0,
-      height: videoStream?.height || 0,
-      fps: eval(videoStream?.r_frame_rate) || 30, // Evaluate frame rate fraction
-      codec: videoStream?.codec_name || 'unknown',
-      bitrate: parseInt(metadata.format.bit_rate) || 0
-    };
+    // Call FFmpeg service
+    const response = await fetch(`${FFMPEG_API_URL}/metadata`, {
+      method: 'POST',
+      body: formData,
+      headers: formData.getHeaders()
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get video metadata');
+    }
+    
+    const metadata = await response.json();
+    return metadata;
   } catch (error) {
     console.error('[Filmstrip] Error getting video metadata:', error);
     throw new Error(`Failed to get video metadata: ${error.message}`);

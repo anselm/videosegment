@@ -40,15 +40,13 @@ else
     exit 1
 fi
 
-# Check FFmpeg
-echo -e "\n${YELLOW}4. Checking FFmpeg${NC}"
-if command -v ffmpeg &> /dev/null && command -v ffprobe &> /dev/null; then
-    echo -e "${GREEN}✓ FFmpeg and ffprobe are installed${NC}"
+# Check FFmpeg service
+echo -e "\n${YELLOW}4. Checking FFmpeg Service${NC}"
+if curl -s -f "http://localhost:9020/health" > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ FFmpeg service is running on port 9020${NC}"
 else
-    echo -e "${RED}✗ FFmpeg/ffprobe not found${NC}"
-    echo "  Install with:"
-    echo "  - Ubuntu/Debian: sudo apt-get install ffmpeg"
-    echo "  - macOS: brew install ffmpeg"
+    echo -e "${RED}✗ FFmpeg service is not accessible${NC}"
+    echo "  Please ensure Docker services are running: npm run docker:start"
     exit 1
 fi
 

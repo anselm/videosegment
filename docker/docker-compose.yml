@@ -54,9 +54,21 @@ services:
     command: mongod --bind_ip_all --auth
     restart: unless-stopped
 
+  ffmpeg:
+    build:
+      context: .
+      dockerfile: Dockerfile.ffmpeg
+    container_name: ffmpeg-api
+    ports:
+      - "9020:9020"
+    volumes:
+      - ffmpeg-temp:/tmp
+    restart: unless-stopped
+
 volumes:
   whisperx-cache:
   ollama-data:
   mongodb-data:
   mongodb-config:
+  ffmpeg-temp:
 

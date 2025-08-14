@@ -22,6 +22,7 @@
     "docker:whisper:stop": "docker compose -f docker/docker-compose.yml stop whisperx",
     "docker:whisper:logs": "docker compose -f docker/docker-compose.yml logs -f whisperx",
     "docker:ollama:logs": "docker compose -f docker/docker-compose.yml logs -f ollama",
+    "docker:ffmpeg:logs": "docker compose -f docker/docker-compose.yml logs -f ffmpeg",
     "test:whisperx": "chmod +x test/whisperx-test.sh && ./test/whisperx-test.sh",
     "test:quick": "chmod +x test/quick-test.sh && ./test/quick-test.sh",
     "test:segmentation": "node test/test-segmentation.js",
