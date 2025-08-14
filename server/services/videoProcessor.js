@@ -3,6 +3,7 @@ import { createWriteStream } from 'fs';
 import path from 'path';
 import { pipeline } from 'stream/promises';
 import fetch from 'node-fetch';
+import FormData from 'form-data';
 
 const VIDEOS_DIR = path.join(process.cwd(), 'data', 'videos', 'files');
 
@@ -60,22 +61,36 @@ export async function transcribeVideo(videoPath, videoId) {
   try {
     console.log(`[VideoProcessor] Transcribing video from ${videoPath} using WhisperX`);
     
+    // Check if WhisperX service URL is configured
+    const whisperxUrl = process.env.WHISPERX_API_URL || 'http://localhost:9010';
+    console.log(`[VideoProcessor] Using WhisperX service at: ${whisperxUrl}`);
+    
     // Read the video file
     const videoBuffer = await fs.readFile(videoPath);
     
-    // Create form data
+    // Create form data using Node.js FormData
     const formData = new FormData();
-    const blob = new Blob([videoBuffer], { type: 'video/mp4' });
-    formData.append('file', blob, path.basename(videoPath));
+    formData.append('file', videoBuffer, {
+      filename: path.basename(videoPath),
+      contentType: 'video/mp4'
+    });
     
     // Send to WhisperX API
-    const response = await fetch('http://localhost:9010/asr', {
+    console.log(`[VideoProcessor] Sending ${videoBuffer.length} bytes to WhisperX service`);
+    const response = await fetch(`${whisperxUrl}/asr`, {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers: formData.getHeaders()
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText;
+      try {
+        errorText = await response.text();
+        console.error(`[VideoProcessor] WhisperX error response:`, errorText);
+      } catch (e) {
+        errorText = `Unable to read error response: ${e.message}`;
+      }
       throw new Error(`WhisperX API error: ${response.status} - ${errorText}`);
     }
     
@@ -110,7 +125,11 @@ export async function transcribeVideo(videoPath, videoId) {
   } catch (error) {
     console.error('[VideoProcessor] Error transcribing video:', error);
     if (error.message.includes('ECONNREFUSED')) {
-      throw new Error('WhisperX service is not running. Please ensure it is running on port 9010.');
+      const whisperxUrl = process.env.WHISPERX_API_URL || 'http://localhost:9010';
+      throw new Error(`WhisperX service is not running. Please ensure it is running at ${whisperxUrl}.`);
+    }
+    if (error.message.includes('ENOTFOUND')) {
+      throw new Error('Cannot connect to WhisperX service. Please check the service URL and network connectivity.');
     }
     throw new Error(`Failed to transcribe video: ${error.message}`);
   }

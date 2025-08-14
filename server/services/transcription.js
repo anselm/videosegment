@@ -1,6 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
 import { downloadVideo, transcribeVideo } from './videoProcessor.js';
 
 // Import the prompts directly as constants since this is a JS file importing from TS
@@ -131,6 +132,15 @@ async function getVideoFileTranscript(videoUrl, videoType, videoId) {
       // For uploaded files, use the path directly
       videoPath = videoUrl.replace('file://', '');
       console.log(`[Transcription] Using uploaded video file: ${videoPath}`);
+      
+      // Check if file exists
+      try {
+        await fs.access(videoPath);
+        const stats = await fs.stat(videoPath);
+        console.log(`[Transcription] Video file exists, size: ${stats.size} bytes`);
+      } catch (fileError) {
+        throw new Error(`Video file not found or not accessible: ${videoPath}`);
+      }
     } else {
       // Download the video
       videoPath = await downloadVideo(videoUrl, videoId, videoType);
@@ -145,7 +155,8 @@ async function getVideoFileTranscript(videoUrl, videoType, videoId) {
   } catch (error) {
     console.error('Error processing video file:', error);
     if (error.message.includes('WhisperX service is not running')) {
-      throw new Error('WhisperX service is not running. Please ensure it is running on port 9010.');
+      const whisperxUrl = process.env.WHISPERX_API_URL || 'http://localhost:9010';
+      throw new Error(`WhisperX service is not running. Please ensure it is running at ${whisperxUrl}.`);
     }
     throw new Error(`Failed to process video file: ${error.message}`);
   }
