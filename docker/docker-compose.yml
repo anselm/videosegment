@@ -69,6 +69,8 @@ services:
       timeout: 15s
       retries: 5
       start_period: 60s
+    environment:
+      - NODE_ENV=production
 
 volumes:
   whisperx-cache:

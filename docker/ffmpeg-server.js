@@ -8,13 +8,25 @@ const crypto = require('crypto');
 
 const execAsync = promisify(exec);
 const app = express();
-const upload = multer({ dest: '/tmp/uploads/' });
+const upload = multer({ 
+  dest: '/tmp/uploads/',
+  limits: {
+    fileSize: 500 * 1024 * 1024 // 500MB limit
+  }
+});
 
 app.use(express.json());
+
+// Add request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Health check
 app.get('/health', (req, res) => {
   try {
+    console.log('Health check requested');
     res.status(200).json({ 
       status: 'ok', 
       service: 'ffmpeg',
@@ -147,6 +159,10 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
   }
   console.log(`FFmpeg service listening on port ${PORT}`);
   console.log('Health check available at /health');
+  console.log('Endpoints available:');
+  console.log('  GET  /health - Health check');
+  console.log('  POST /metadata - Get video metadata');
+  console.log('  POST /filmstrip - Generate filmstrip frames');
   console.log('Server started successfully');
 });
 
