@@ -25,6 +25,7 @@
     "docker:ffmpeg:logs": "docker compose -f docker/docker-compose.yml logs -f ffmpeg",
     "docker:ffmpeg:restart": "docker compose -f docker/docker-compose.yml restart ffmpeg",
     "docker:ffmpeg:rebuild": "docker compose -f docker/docker-compose.yml up -d --build ffmpeg",
+    "docker:ffmpeg:test": "curl -f http://localhost:9020/health || echo 'FFmpeg service not responding'",
     "docker:status": "docker ps",
     "docker:fix-permissions": "sudo usermod -aG docker $USER && echo 'Please log out and back in for Docker permissions to take effect'",
     "test:whisperx": "chmod +x test/whisperx-test.sh && ./test/whisperx-test.sh",
