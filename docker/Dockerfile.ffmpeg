@@ -1,7 +1,7 @@
 FROM jrottenberg/ffmpeg:4.4-alpine
 
-# Install Node.js and npm for a simple API server
-RUN apk add --no-cache nodejs npm
+# Install Node.js and npm for a simple API server, plus wget for health checks
+RUN apk add --no-cache nodejs npm wget
 
 # Create app directory
 WORKDIR /app
@@ -12,6 +12,9 @@ COPY package-ffmpeg.json ./package.json
 
 # Install dependencies
 RUN npm install
+
+# Create temp directories
+RUN mkdir -p /tmp/uploads /tmp/frames
 
 # Expose port
 EXPOSE 9020

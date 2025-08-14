@@ -63,9 +63,12 @@ services:
     volumes:
       - ffmpeg-temp:/tmp
     restart: unless-stopped
-    depends_on:
-      - whisperx
-      - ollama
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   whisperx-cache:

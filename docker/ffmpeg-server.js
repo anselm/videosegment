@@ -30,11 +30,20 @@ app.post('/metadata', upload.single('video'), async (req, res) => {
     const videoStream = metadata.streams.find(s => s.codec_type === 'video');
     const duration = parseFloat(metadata.format.duration);
     
+    // Parse frame rate safely
+    let fps = 30;
+    if (videoStream?.r_frame_rate) {
+      const [num, den] = videoStream.r_frame_rate.split('/').map(Number);
+      if (den && den !== 0) {
+        fps = num / den;
+      }
+    }
+
     const result = {
       duration,
       width: videoStream?.width || 0,
       height: videoStream?.height || 0,
-      fps: eval(videoStream?.r_frame_rate) || 30,
+      fps: fps,
       codec: videoStream?.codec_name || 'unknown',
       bitrate: parseInt(metadata.format.bit_rate) || 0
     };
@@ -114,6 +123,25 @@ app.post('/filmstrip', upload.single('video'), async (req, res) => {
 });
 
 const PORT = process.env.PORT || 9020;
-app.listen(PORT, () => {
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`FFmpeg service listening on port ${PORT}`);
+  console.log('Health check available at /health');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
