@@ -1,7 +1,7 @@
-FROM jrottenberg/ffmpeg:4.4-alpine
+FROM node:18-alpine
 
-# Install Node.js and npm for a simple API server, plus wget for health checks
-RUN apk add --no-cache nodejs npm wget
+# Install FFmpeg and wget for health checks
+RUN apk add --no-cache ffmpeg wget
 
 # Create app directory
 WORKDIR /app
