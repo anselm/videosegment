@@ -14,6 +14,13 @@ const FILMSTRIP_DIR = join(__dirname, '../../data/videos/filmstrips');
 
 export async function generateFilmstrip(videoPath, videoId, frameCount = 100) {
   try {
+    // Check if ffmpeg is available
+    try {
+      await execAsync('ffmpeg -version');
+    } catch (error) {
+      throw new Error('FFmpeg is not installed. Please install FFmpeg on your system.');
+    }
+    
     // Clean up the video path if it has file:// prefix
     const cleanVideoPath = videoPath.replace('file://', '');
     
@@ -69,6 +76,13 @@ export async function generateFilmstrip(videoPath, videoId, frameCount = 100) {
 
 export async function getVideoMetadata(videoPath) {
   try {
+    // Check if ffprobe is available
+    try {
+      await execAsync('ffprobe -version');
+    } catch (error) {
+      throw new Error('FFprobe is not installed. Please install FFmpeg (which includes ffprobe) on your system.');
+    }
+    
     // Clean up the video path if it has file:// prefix
     const cleanVideoPath = videoPath.replace('file://', '');
     

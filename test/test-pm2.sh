@@ -40,8 +40,20 @@ else
     exit 1
 fi
 
+# Check FFmpeg
+echo -e "\n${YELLOW}4. Checking FFmpeg${NC}"
+if command -v ffmpeg &> /dev/null && command -v ffprobe &> /dev/null; then
+    echo -e "${GREEN}✓ FFmpeg and ffprobe are installed${NC}"
+else
+    echo -e "${RED}✗ FFmpeg/ffprobe not found${NC}"
+    echo "  Install with:"
+    echo "  - Ubuntu/Debian: sudo apt-get install ffmpeg"
+    echo "  - macOS: brew install ffmpeg"
+    exit 1
+fi
+
 # Test PM2 commands
-echo -e "\n${YELLOW}4. Testing PM2 Commands${NC}"
+echo -e "\n${YELLOW}5. Testing PM2 Commands${NC}"
 
 # Stop if already running
 if pm2 list 2>/dev/null | grep -q "videosegment-server"; then
@@ -67,7 +79,7 @@ else
 fi
 
 # Test API endpoint
-echo -e "\n${YELLOW}5. Testing API Endpoint${NC}"
+echo -e "\n${YELLOW}6. Testing API Endpoint${NC}"
 if curl -s -f "http://localhost:3001/api/health" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ API is responding${NC}"
 else
@@ -76,7 +88,7 @@ else
 fi
 
 # Show process info
-echo -e "\n${YELLOW}6. Process Information${NC}"
+echo -e "\n${YELLOW}7. Process Information${NC}"
 pm2 info videosegment-server | grep -E "(status|uptime|restarts|memory|cpu)" | head -10
 
 echo -e "\n${GREEN}PM2 Test Complete!${NC}"
