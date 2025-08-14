@@ -66,8 +66,7 @@ async def health_check():
             content={"status": "error", "service": "whisperx", "error": str(e)}
         )
 
-@app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
+async def transcribe_internal(file: UploadFile):
     input_path = None
     wav_path = None
     
@@ -160,4 +159,12 @@ async def transcribe(file: UploadFile = File(...)):
                 logger.info(f"Cleaned up WAV file: {wav_path}")
         except Exception as e:
             logger.warning(f"Failed to clean up WAV file: {e}")
+
+@app.post("/asr")
+async def transcribe_asr(file: UploadFile = File(...)):
+    return await transcribe_internal(file)
+
+@app.post("/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    return await transcribe_internal(file)
 
