@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Install ffmpeg for audio decoding
-RUN apt-get update && apt-get install -y ffmpeg
+# Install ffmpeg for audio decoding and wget for health checks
+RUN apt-get update && apt-get install -y ffmpeg wget
 
 # Install whisperx + FastAPI + required dependencies
 RUN pip install --no-cache-dir whisperx[diarize] fastapi uvicorn python-multipart

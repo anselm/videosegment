@@ -7,6 +7,10 @@ import subprocess
 
 app = FastAPI()
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "whisperx"}
+
 @app.post("/asr")
 async def transcribe(file: UploadFile = File(...)):
     # Save uploaded file
@@ -39,8 +43,19 @@ async def transcribe(file: UploadFile = File(...)):
     os.remove(input_path)
     os.remove(wav_path)
 
+    # Format response to match expected structure
+    segments = result.get("segments", [])
+    formatted_segments = []
+    
+    for segment in segments:
+        formatted_segments.append({
+            "start": segment.get("start", 0),
+            "end": segment.get("end", 0),
+            "text": segment.get("text", "").strip()
+        })
+    
     return {
         "text": result.get("text", ""),
-        "segments": result.get("segments", [])
+        "segments": formatted_segments
     }
 
