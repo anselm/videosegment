@@ -63,6 +63,9 @@ services:
     volumes:
       - ffmpeg-temp:/tmp
     restart: unless-stopped
+    depends_on:
+      - whisperx
+      - ollama
 
 volumes:
   whisperx-cache:
