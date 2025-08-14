@@ -214,6 +214,13 @@ Note: FFmpeg is no longer required as WhisperX handles video processing internal
 - Available at http://localhost:11434
 - Alternative to Claude AI for offline/private processing
 
+#### MongoDB
+- Database for storing video metadata and transcripts
+- Available at http://localhost:27017
+- Credentials: admin/admin123 (configured in docker-compose.yml)
+- Database name: videosegment
+- Automatically initialized with required collections
+
 ### Troubleshooting
 
 If services fail to start:

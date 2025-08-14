@@ -52,6 +52,23 @@ else
     echo "  Build with: npm run build"
 fi
 
+# Check PM2
+echo -e "\n${YELLOW}Checking PM2...${NC}"
+if command -v pm2 &> /dev/null; then
+    echo -e "${GREEN}✓ PM2 is installed${NC}"
+    
+    # Check if videosegment-server is running
+    if pm2 list 2>/dev/null | grep -q "videosegment-server"; then
+        echo -e "${GREEN}✓ videosegment-server is running in PM2${NC}"
+    else
+        echo -e "${YELLOW}! videosegment-server is not running in PM2${NC}"
+        echo "  Start with: npm run pm2:start"
+    fi
+else
+    echo -e "${YELLOW}! PM2 not installed${NC}"
+    echo "  Install with: npm install -g pm2"
+fi
+
 # Check environment
 echo -e "\n${YELLOW}Checking environment...${NC}"
 if [ -f ".env" ]; then
@@ -68,7 +85,15 @@ fi
 
 echo -e "\n${GREEN}Quick Start Commands:${NC}"
 echo "1. npm install                    # Install dependencies"
-echo "2. npm run docker:whisper:start   # Start WhisperX"
-echo "3. npm run build:serve            # Build and start the app"
+echo "2. npm run docker:start           # Start all Docker services (WhisperX, Ollama, MongoDB)"
+echo "3. npm run build                  # Build the frontend"
+echo "4. npm run pm2:start              # Start with PM2 (recommended)"
+echo "   OR"
+echo "   npm run build:serve            # Build and start without PM2"
 echo ""
 echo "Then open http://localhost:3001 in your browser"
+echo ""
+echo -e "${GREEN}PM2 Management:${NC}"
+echo "- npm run pm2:logs                # View logs"
+echo "- npm run pm2:monit               # Monitor performance"
+echo "- npm run pm2:build-restart       # Rebuild and restart"

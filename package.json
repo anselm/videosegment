@@ -24,7 +24,8 @@
     "docker:ollama:logs": "docker compose -f docker/docker-compose.yml logs -f ollama",
     "test:whisperx": "chmod +x test/whisperx-test.sh && ./test/whisperx-test.sh",
     "test:quick": "chmod +x test/quick-test.sh && ./test/quick-test.sh",
-    "test:segmentation": "node test/test-segmentation.js"
+    "test:segmentation": "node test/test-segmentation.js",
+    "test:pm2": "chmod +x test/test-pm2.sh && ./test/test-pm2.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.1",
