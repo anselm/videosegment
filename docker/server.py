@@ -1,7 +1,7 @@
 # server.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
-import whisperx
+import whisper
 import os
 import tempfile
 import subprocess
@@ -12,12 +12,6 @@ from subprocess import TimeoutExpired
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Set additional environment variables for CTranslate2
-os.environ['CTRANSLATE2_DISABLE_STACK_PROTECTION'] = '1'
-os.environ['CT2_DISABLE_STACK_PROTECTION'] = '1'
-os.environ['OMP_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
 
 app = FastAPI()
 
@@ -35,23 +29,19 @@ async def root():
     }
 
 def get_model():
-    """Get or load the WhisperX model with caching"""
-    model_key = f"{os.environ.get('WHISPER_MODEL', 'base')}_{os.environ.get('DEVICE', 'cpu')}_{os.environ.get('COMPUTE_TYPE', 'float32')}"
+    """Get or load the Whisper model with caching"""
+    model_name = os.environ.get('WHISPER_MODEL', 'base')
     
-    if model_key not in model_cache:
-        logger.info(f"Loading WhisperX model: {model_key}")
+    if model_name not in model_cache:
+        logger.info(f"Loading Whisper model: {model_name}")
         try:
-            model_cache[model_key] = whisperx.load_model(
-                os.environ.get("WHISPER_MODEL", "base"),
-                device=os.environ.get("DEVICE", "cpu"),
-                compute_type=os.environ.get("COMPUTE_TYPE", "float32")
-            )
+            model_cache[model_name] = whisper.load_model(model_name)
             logger.info("Model loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise
     
-    return model_cache[model_key]
+    return model_cache[model_name]
 
 @app.get("/health")
 async def health_check():
