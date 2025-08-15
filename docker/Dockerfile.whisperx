@@ -1,14 +1,18 @@
 FROM python:3.11-slim
 
 # Install ffmpeg for audio decoding and wget for health checks
-RUN apt-get update && apt-get install -y ffmpeg wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg wget build-essential && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables to help with library loading
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV PYTHONUNBUFFERED=1
+ENV CTRANSLATE2_DISABLE_STACK_PROTECTION=1
 
 # Install whisperx + FastAPI + required dependencies
-RUN pip install --no-cache-dir whisperx[diarize] fastapi uvicorn python-multipart
+# Use specific versions to avoid compatibility issues
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir whisperx fastapi uvicorn python-multipart
 
 WORKDIR /app
 COPY server.py .
