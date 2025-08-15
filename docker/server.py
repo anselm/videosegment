@@ -13,6 +13,12 @@ from subprocess import TimeoutExpired
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Set additional environment variables for CTranslate2
+os.environ['CTRANSLATE2_DISABLE_STACK_PROTECTION'] = '1'
+os.environ['CT2_DISABLE_STACK_PROTECTION'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+
 app = FastAPI()
 
 # Global model cache
